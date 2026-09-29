@@ -132,6 +132,122 @@ def optimize_streaming_network():
 
     return True, f"{count} adet OBS profilinde Düşük Gecikme Ağ Soketi (LowLatency) aktif edildi!"
 
+def enable_obs_replay_buffer(duration_sec=60):
+    """
+    Tüm OBS profillerinde 60 saniyelik Akıllı Replay Buffer (Anında Klip & Vurgu Kaydı) özelliğini aktif eder.
+    Yayıncılar oyun esnasında F9 veya belirledikleri kısayola bastıklarında son 60 saniyelik efsane anları anında kaydeder.
+    """
+    prof_dir = get_obs_profiles_dir()
+    if not os.path.exists(prof_dir):
+        return False, "Profil klasörü bulunamadı."
+
+    count = 0
+    for p_name in os.listdir(prof_dir):
+        ini_path = os.path.join(prof_dir, p_name, "basic.ini")
+        if os.path.exists(ini_path):
+            try:
+                with open(ini_path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                new_lines = []
+                in_adv = False
+                in_simple = False
+                has_rb_adv = False
+                has_rb_simp = False
+                for line in lines:
+                    stripped = line.strip()
+                    if stripped == "[AdvOut]":
+                        in_adv = True
+                        in_simple = False
+                    elif stripped == "[SimpleOutput]":
+                        in_simple = True
+                        in_adv = False
+                    elif stripped.startswith("["):
+                        in_adv = False
+                        in_simple = False
+
+                    if in_adv and stripped.startswith("ReplayBuffer="):
+                        new_lines.append("ReplayBuffer=true\n")
+                        has_rb_adv = True
+                    elif in_simple and stripped.startswith("ReplayBuffer="):
+                        new_lines.append("ReplayBuffer=true\n")
+                        has_rb_simp = True
+                    else:
+                        new_lines.append(line)
+
+                final_lines = []
+                for line in new_lines:
+                    final_lines.append(line)
+                    if line.strip() == "[AdvOut]" and not has_rb_adv:
+                        final_lines.append("ReplayBuffer=true\n")
+                        final_lines.append(f"ReplayBufferTime={duration_sec}\n")
+                        final_lines.append("ReplayBufferMaxMemory=1024\n")
+                    elif line.strip() == "[SimpleOutput]" and not has_rb_simp:
+                        final_lines.append("ReplayBuffer=true\n")
+                        final_lines.append(f"ReplayBufferTime={duration_sec}\n")
+
+                with open(ini_path, "w", encoding="utf-8") as f:
+                    f.writelines(final_lines)
+                count += 1
+            except Exception:
+                pass
+    return True, f"{count} adet OBS profilinde {duration_sec} saniyelik Replay Buffer (Anında Klip) aktif edildi!"
+
+def enable_rnnoise_on_all_mic_sources():
+    """
+    Tüm OBS sahne koleksiyonlarındaki Mikrofon kaynaklarına yapay zeka tabanlı RNNoise gürültü engelleme filtresini ekler.
+    Klavye sesleri, fan gürültüsü ve oda yankısını anında yok eder.
+    """
+    scenes_dir = get_obs_scenes_dir()
+    if not os.path.exists(scenes_dir):
+        return False, "Sahne klasörü bulunamadı."
+
+    count = 0
+    for fname in os.listdir(scenes_dir):
+        if fname.endswith(".json"):
+            fpath = os.path.join(scenes_dir, fname)
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+
+                modified = False
+                aux = data.get("AuxAudioDevice1")
+                if aux and isinstance(aux, dict):
+                    filters = aux.get("filters", [])
+                    has_rnnoise = any(flt.get("id") == "noise_suppress_filter" for flt in filters)
+                    if not has_rnnoise:
+                        filters.append({
+                            "name": "🤖 AI RNNoise Gürültü Engelleme",
+                            "id": "noise_suppress_filter",
+                            "versioned_id": "noise_suppress_filter",
+                            "settings": {"method": 1},
+                            "enabled": True
+                        })
+                        aux["filters"] = filters
+                        modified = True
+
+                for s in data.get("sources", []):
+                    if s.get("id") == "wasapi_input_capture":
+                        filters = s.get("filters", [])
+                        has_rnnoise = any(flt.get("id") == "noise_suppress_filter" for flt in filters)
+                        if not has_rnnoise:
+                            filters.append({
+                                "name": "🤖 AI RNNoise Gürültü Engelleme",
+                                "id": "noise_suppress_filter",
+                                "versioned_id": "noise_suppress_filter",
+                                "settings": {"method": 1},
+                                "enabled": True
+                            })
+                            s["filters"] = filters
+                            modified = True
+
+                if modified:
+                    with open(fpath, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                    count += 1
+            except Exception:
+                pass
+    return True, f"{count} adet sahne koleksiyonundaki mikrofona Yapay Zeka (RNNoise) gürültü filtresi eklendi!"
+
 def launch_obs_studio():
     """
     OBS Studio 64-bit'i başlatır.
