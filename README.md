@@ -1,4 +1,4 @@
-# 🎥 Ripleytia OBS AI Studio (v1.4.0 Güncel Versiyon)
+# 🎥 Ripleytia OBS AI Studio (v1.5.0 Güncel Versiyon)
 
 <p align="center">
   <img src="assets/logo.png" width="160" alt="Ripleytia Logo" />
@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Canlı Yayıncılar ve Rekabetçi Espor Oyuncuları İçin Yapay Zeka Destekli OBS Studio & Sahne/Overlay Stüdyosu</b><br>
-  <i>Çok Katmanlı Espor Geometrisi • Shroud & VCT Kalitesinde Paneller • 4 Profesyonel Yayıncı Trendi • Katı Anti-Repetition Havuzu</i>
+  <i>EsportsDesignFactory • Grunge Doku Katmanları • 3D Extruded Tipografi • Neon Volumetric Aura • %50 Anti-Repetition Eşiği</i>
 </p>
 
 <p align="center">
@@ -14,43 +14,66 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-blueviolet?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/UI-CustomTkinter-blueviolet?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Anti--Cheat-100%25%20Uyumlu%20(Safe)-brightgreen?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Sürüm-v1.4.0%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Sürüm-v1.5.0%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
 </p>
 
 ---
 
 ## 📖 Genel Bakış
 
-**Ripleytia OBS AI Studio (v1.4.0)**, amatör ve düz metin odaklı tasarımları geride bırakarak espor turnuvaları ve ünlü profesyonel yayıncıların (Shroud, Ninja, xQc) kalitesinde **Çok Katmanlı Şekil Geometrisi (Layered Geometry)** ve **Profesyonel Yayıncı Panelleri** üreten yeni nesil grafik motoruna sahiptir.
+**Ripleytia OBS AI Studio (v1.5.0)**, bu sürümde tamamen yeniden yazılmış **EsportsDesignFactory** grafik motoruyla geliyor. Syhd3, WTCN ve VCT turnuva paketlerinin ayırt edici özelliklerini — gerçek doku katmanları, 3D extruded metin gölgeleri, neon volumetric bloom aura ve yapısal anti-repetition — saf Python/Pillow ile üretiyor.
 
-Yalnızca renkleri ve metni değil; **arka plan hız şeritlerini**, **metin arkasındaki zırhlı ve açılı paralelkenar/brutalist panelleri**, **hazard ikaz şeritlerini (`///`)**, **dinamik ses dalgası equalizer çubuklarını** ve **3 segmentli espor etkinlik barını** her tıklamada sıfırdan kurar.
+Her "Oluştur" tuşuna basıldığında, motor aynı şablonu modifiye etmez; **DesignHistoryManager** son 10 tasarımı takip eder ve %50'den fazla yapısal benzerlik tespit ederse tasarımı reddederek tamamen farklı bir kombinasyon seçer.
 
 ---
 
-## 🚀 Sürüm 1.4.0 ile Gelen Profesyonel Yenilikler
+## 🚀 Sürüm 1.5.0 ile Gelen Profesyonel Yenilikler
 
-### 1. 🛡️ Çok Katmanlı Şekil Geometrisi ve Hero Paneller (Layered Geometry)
-Artık düz bir arka plan üzerine metin yerleştirilmez! Metinlerin arkasına ve sahnenin merkezine devasa, çok katmanlı profesyonel paneller çizilir:
-* **Espor Paralelkenar Plakaları:** 25°-35° açılı zırhlı metalik gövde, parlak neon dış çerçeve, sol kenarda renkli hazard ikaz çizgileri ve sağda ses frekans çubukları.
-* **Brutalist Kalın Bloklar:** 90° açılı sert gövde, 14px kalınlığında simsiyah ofset blok gölge, endüstriyel üst etiket şeridi ve barkodlar.
-* **Siberpunk HUD Panelleri:** 45° chamfer pah kesimli siber cam panel, telemetri satırları, köşe vidaları ve reticle hedefleme işaretleri.
-* **Lüks Buzlu Cam (Glassmorphism):** 24px yuvarlatılmış yarı saydam gövde, difüze neon ortam ışıması, altın/kırmızı canlı yayın hap rozetleri.
+### 1. 🏭 EsportsDesignFactory — Tamamen Yeni Grafik Motoru
 
-### 2. 🎮 4 Profesyonel Yayıncı Tasarım Trendi
-* **🔥 ESPOR / AGRESİF (Valorant Champions / VCT):** Agresif açılar, kalın espor fontları, turnuva rozetleri ve canlı neon aksanlar.
-* **⬛ BOLD BRUTALISM (Endüstriyel & Devasa Tipografi):** Ekranı kaplayan devasa watermark yazılar, yüksek kontrastlı kalın etiketler ve siyah-sarı/kırmızı şeritler.
-* **⚡ TECH / MINIMALIST FUTURE (Cyberpunk HUD):** Holografik veri tabanı arayüzü, audio visualizer çubukları, telemetri koordinatları ve siber ızgara.
-* **💎 PREMIUM STREAM (Modern Lüks & Glassmorphism):** Yumuşak ambient neon küreler, lüks cam efektleri ve asil tipografi.
+Eski şablon tabanlı motor kaldırıldı. Yerini **5 bağımsız yapısal trait** üzerine kurulu fabrika mimarisi aldı:
 
-### 3. 📊 3 Segmentli Modüler Espor Etkinlik Barı (Event Ticker)
-Düz dikdörtgenler yerine 3 bağımsız modüle bölünmüş profesyonel şerit:
-* **⭐ SON TAKİPÇİ:** Topluluk üyesi için özel çerçeve.
-* **💎 SON ABONE:** VIP destekçi için neon rozet.
-* **🎯 BAĞIŞ HEDEFİ:** İçinde doğrudan çizilmiş canlı degrade ilerleme çubuğu (%85 doluluk).
+| Trait | Havuz (Seçenekler) |
+|---|---|
+| **texture_type** | heavy_grunge_scratch, dark_brushed_metal, carbon_fiber_weave, distressed_concrete, smoke_light_leaks |
+| **emblem_shape** | hexagon, shield, slash_strips, diamond_cut, sector_wedge, chamfer_rect |
+| **typo_style** | 3d_extrude_heavy, outline_glow, italic_slash_impact, brutalist_block, hud_mono_neon |
+| **aura_family** | crimson_red, cyber_cyan, electric_gold, void_purple, acid_green |
+| **layout** | center_hero, left_wedge, bottom_ribbon, full_bleed_hud, asymmetric_tilt |
 
-### 4. 🧬 Katı Şablon Yasaklaması (Hard Anti-Repetition Cache)
-* Son 15 tasarım hafızada tutulur. Aynı trend veya aynı iskelet şeması üst üste ASLA gelemez!
-* Şablon benzerliği tespit edildiğinde motor anında yeni bir mutasyon türetir.
+### 2. 🎨 Grunge Doku Arka Planlar (Procedural Texture)
+Artık düz gradyan yok! Her arka plan gerçek bir doku katmanıyla başlar:
+* **heavy_grunge_scratch:** 400 adet rastgele çizgi, farklı alfa/kalınlık/eğim kombinasyonlarıyla
+* **dark_brushed_metal:** 500 yatay + 120 diyagonal ışık sıyırması
+* **carbon_fiber_weave:** 12px tile dokuma, parlak/koyu değişimli karbon kafes
+* **distressed_concrete:** 800 rastgele nokta + beton çatlak çizgileri
+* **smoke_light_leaks:** 6 adet neon bloom dairesi, gerçek ışık sızıntısı efekti
+
+### 3. ✍️ 3D Extruded Tipografi
+Metinler artık 12 katmanlı derinlik gölgesiyle çiziliyor:
+* 12→1 arası ofsetlerde degrade extrude geçişi (koyu → parlak)
+* 3px kalınlığında dış stroke ring (neon renkte)
+* En üstte saf face yazı katmanı
+
+### 4. 💥 Neon Volumetric Bloom Aura
+Her emblem/logo arkasında gerçek neon parlama:
+* 22 adımlı konsantrik ellipse (en dıştan içe doğru opaklık artışı)
+* Aura rengi traits'ten (crimson_red, cyber_cyan, vb.) otomatik belirlenir
+* RGBA composite ile diğer katmanlarla gerçekçi karışım
+
+### 5. 🔷 6 Emblem Şekli
+`hexagon`, `shield`, `slash_strips`, `diamond_cut`, `sector_wedge`, `chamfer_rect` — her basışta rastgele seçilir, iç/dış renk ayrımı ile çizilir
+
+### 6. 🗺️ 5 Tam Farklı Kompozisyon Düzeni
+* **center_hero:** Ortada büyük emblem + bloom + 3D başlık
+* **left_wedge:** Sol açılı panel, sağda büyük tipografi
+* **bottom_ribbon:** Üstte emblem, altta agresif şerit bilgi barı
+* **full_bleed_hud:** HUD köşe bracketi grid, mono font tipografi
+* **asymmetric_tilt:** Diyagonal slash bölücü, iki bölgeli asimetrik yerleşim
+
+### 7. 🧬 DesignHistoryManager (%50 Benzerlik Eşiği)
+* Son 10 tasarım 5 trait üzerinden kıyaslanır
+* Benzerlik ≥ %50 → otomatik reject + re-mutate (max 20 deneme)
 
 ---
 
@@ -61,9 +84,9 @@ Uygulama açık kaynak kodludur, hiçbir reklam veya arka plan zararlısı içer
 * **Dosya Adı:** `Ripleytia OBS AI Studio.exe`
 * **SHA-256 Özeti:**
   ```text
-  0c78044997f43ab5d5ccf250bfba0571881f06ff5a10ab7b231c93bf327b4650
+  2c67bab3e70cd8dced2031515562c5900e1f0c0613c1b2bfd1cb6d310ed40e4b
   ```
-* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/0c78044997f43ab5d5ccf250bfba0571881f06ff5a10ab7b231c93bf327b4650)
+* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/2c67bab3e70cd8dced2031515562c5900e1f0c0613c1b2bfd1cb6d310ed40e4b)
 
 ---
 
@@ -107,11 +130,11 @@ ripleytia-obs-studio/
 │   ├── hardware.py         # Donanım, encoder ve OBS tespit motoru
 │   ├── speedtest.py        # Cloudflare CDN canlı hız testi motoru
 │   ├── obs_engine.py       # OBS profil, sahne, replay buffer ve ses motoru
-│   ├── ai_designer.py      # AI Banner, Webcam, Chat, Ticker & Sahne Tasarım Motoru
+│   ├── ai_designer.py      # EsportsDesignFactory v1.5.0 — Grunge+3D+Neon
 │   └── performance_monitor.py # 0 ms gecikmeli CPU, RAM & OBS süreç monitörü
 ├── main.py                 # CustomTkinter 8 sekmeli modern grafik arayüzü
 ├── build_exe.py            # PyInstaller derleme betiği
-├── version_info.txt        # Windows PE binary sürüm bilgisi (v1.4.0)
+├── version_info.txt        # Windows PE binary sürüm bilgisi (v1.5.0)
 ├── .gitignore              # Git yoksayma kuralları
 └── README.md               # Detaylı dokümantasyon
 ```
