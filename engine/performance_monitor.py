@@ -1,6 +1,5 @@
 import ctypes
 import time
-import subprocess
 
 class MEMORYSTATUSEX(ctypes.Structure):
     _fields_ = [
@@ -68,20 +67,13 @@ class PerformanceMonitor:
         }
 
     def check_obs_process(self):
-        is_running = False
-        pid = None
         try:
-            out = subprocess.run(["tasklist", "/fi", "imagename eq obs64.exe", "/fo", "csv", "/nh"], capture_output=True, text=True)
-            if "obs64.exe" in out.stdout:
-                is_running = True
-                parts = out.stdout.strip().replace('"', '').split(",")
-                if len(parts) > 1 and parts[1].isdigit():
-                    pid = int(parts[1])
-        except Exception:
-            pass
-
+            from engine.hardware import find_running_process
+        except ImportError:
+            from hardware import find_running_process
+        pid = find_running_process("obs64.exe") or find_running_process("obs32.exe")
         return {
-            "is_running": is_running,
+            "is_running": pid is not None,
             "pid": pid
         }
 

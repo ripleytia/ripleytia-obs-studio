@@ -1,17 +1,107 @@
-import subprocess
-import json
+# -*- coding: utf-8 -*-
 import os
+import sys
+import ctypes
+from ctypes import wintypes
+import winreg
+
+# Win32 Process Snapshot Constants & Structures
+TH32CS_SNAPPROCESS = 0x00000002
+
+class PROCESSENTRY32W(ctypes.Structure):
+    _fields_ = [
+        ('dwSize', wintypes.DWORD),
+        ('cntUsage', wintypes.DWORD),
+        ('th32ProcessID', wintypes.DWORD),
+        ('th32DefaultHeapID', ctypes.c_size_t),
+        ('th32ModuleID', wintypes.DWORD),
+        ('cntThreads', wintypes.DWORD),
+        ('th32ParentProcessID', wintypes.DWORD),
+        ('pcPriClassBase', wintypes.LONG),
+        ('dwFlags', wintypes.DWORD),
+        ('szExeFile', wintypes.WCHAR * 260)
+    ]
+
+class MEMORYSTATUSEX(ctypes.Structure):
+    _fields_ = [
+        ('dwLength', ctypes.c_ulong),
+        ('dwMemoryLoad', ctypes.c_ulong),
+        ('ullTotalPhys', ctypes.c_ulonglong),
+        ('ullAvailPhys', ctypes.c_ulonglong),
+        ('ullTotalPageFile', ctypes.c_ulonglong),
+        ('ullAvailPageFile', ctypes.c_ulonglong),
+        ('ullTotalVirtual', ctypes.c_ulonglong),
+        ('ullAvailVirtual', ctypes.c_ulonglong),
+        ('sullAvailExtendedVirtual', ctypes.c_ulonglong)
+    ]
+
+class DEVMODEW(ctypes.Structure):
+    _fields_ = [
+        ('dmDeviceName', wintypes.WCHAR * 32),
+        ('dmSpecVersion', wintypes.WORD),
+        ('dmDriverVersion', wintypes.WORD),
+        ('dmSize', wintypes.WORD),
+        ('dmDriverExtra', wintypes.WORD),
+        ('dmFields', wintypes.DWORD),
+        ('dmOrientation', wintypes.SHORT),
+        ('dmPaperSize', wintypes.SHORT),
+        ('dmPaperLength', wintypes.SHORT),
+        ('dmPaperWidth', wintypes.SHORT),
+        ('dmScale', wintypes.SHORT),
+        ('dmCopies', wintypes.SHORT),
+        ('dmDefaultSource', wintypes.SHORT),
+        ('dmPrintQuality', wintypes.SHORT),
+        ('dmColor', wintypes.SHORT),
+        ('dmDuplex', wintypes.SHORT),
+        ('dmYResolution', wintypes.SHORT),
+        ('dmTTOption', wintypes.SHORT),
+        ('dmCollate', wintypes.SHORT),
+        ('dmFormName', wintypes.WCHAR * 32),
+        ('dmLogPixels', wintypes.WORD),
+        ('dmBitsPerPel', wintypes.DWORD),
+        ('dmPelsWidth', wintypes.DWORD),
+        ('dmPelsHeight', wintypes.DWORD),
+        ('dmDisplayFlags', wintypes.DWORD),
+        ('dmDisplayFrequency', wintypes.DWORD),
+    ]
+
+def find_running_process(name):
+    """
+    Windows Kernel32 Toolhelp32 Snapshot kullanarak bir sürecin çalışıp çalışmadığını
+    ve varsa PID değerini 0 gecikmeyle (konsol/PowerShell penceresi açmadan) sorgular.
+    """
+    kernel32 = ctypes.windll.kernel32
+    hSnapshot = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
+    if hSnapshot == -1 or hSnapshot == 0:
+        return None
+
+    pe = PROCESSENTRY32W()
+    pe.dwSize = ctypes.sizeof(PROCESSENTRY32W)
+    target = name.lower()
+    found_pid = None
+
+    if kernel32.Process32FirstW(hSnapshot, ctypes.byref(pe)):
+        while True:
+            if pe.szExeFile.lower() == target:
+                found_pid = pe.th32ProcessID
+                break
+            if not kernel32.Process32NextW(hSnapshot, ctypes.byref(pe)):
+                break
+
+    kernel32.CloseHandle(hSnapshot)
+    return found_pid
 
 def get_obs_info():
     """
     OBS Studio'nun yüklü olduğu konumu, çalışma durumunu ve profil sayısını denetler.
+    Hiçbir harici konsol süreci başlatmaz.
     """
     obs_paths = [
         r"C:\Program Files\obs-studio\bin\64bit\obs64.exe",
         r"C:\Program Files (x86)\obs-studio\bin\32bit\obs32.exe",
         os.path.expandvars(r"%LOCALAPPDATA%\Programs\obs-studio\bin\64bit\obs64.exe")
     ]
-    
+
     installed = False
     exe_path = ""
     for p in obs_paths:
@@ -19,19 +109,14 @@ def get_obs_info():
             installed = True
             exe_path = p
             break
-            
+
     appdata = os.path.expandvars(r"%APPDATA%\obs-studio")
     appdata_exists = os.path.exists(appdata)
-    
-    # Çalışıyor mu kontrolü
-    is_running = False
-    try:
-        out = subprocess.run(["tasklist", "/fi", "imagename eq obs64.exe"], capture_output=True, text=True)
-        if "obs64.exe" in out.stdout:
-            is_running = True
-    except Exception:
-        pass
-        
+
+    # Sıfır gecikmeli yerel Win32 süreç kontrolü
+    pid = find_running_process("obs64.exe") or find_running_process("obs32.exe")
+    is_running = pid is not None
+
     profiles_count = 0
     scenes_count = 0
     if appdata_exists:
@@ -46,6 +131,7 @@ def get_obs_info():
         "installed": installed,
         "exe_path": exe_path,
         "is_running": is_running,
+        "pid": pid,
         "appdata": appdata,
         "appdata_exists": appdata_exists,
         "profiles_count": profiles_count,
@@ -55,64 +141,77 @@ def get_obs_info():
 def get_system_hardware():
     """
     Sistem donanım bilgilerini (CPU, GPU, RAM, Monitör, İşletim Sistemi)
-    CIMInstance üzerinden güvenilir şekilde sorgular ve donanım kodlayıcı yeteneklerini tespit eder.
+    PowerShell veya harici konsol komutları OLMADAN, doğrudan Windows Registry
+    ve Win32 Ctypes API'leri üzerinden mikro-saniyeler içinde tespit eder.
+    Böylece başlangıçta herhangi bir PowerShell penceresi açılıp kapanmaz.
     """
-    ps_cmd = """
-    $ErrorActionPreference = 'SilentlyContinue'
-    $proc = Get-CimInstance Win32_Processor | Select-Object -First 1
-    $os = Get-CimInstance Win32_OperatingSystem
-    $cs = Get-CimInstance Win32_ComputerSystem
-    $gpus = (Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name) -join ', '
-    $mon = Get-CimInstance Win32_VideoController | Select-Object -First 1 CurrentHorizontalResolution, CurrentVerticalResolution, CurrentRefreshRate
-
-    $ramTotal = [math]::Round($cs.TotalPhysicalMemory / 1GB, 1)
-    $ramFree = [math]::Round($os.FreePhysicalMemory / 1MB, 1)
-
-    [PSCustomObject]@{
-        CPU = $proc.Name.Trim()
-        Cores = $proc.NumberOfCores
-        Threads = $proc.NumberOfLogicalProcessors
-        GPU = $gpus
-        RAM_Total = $ramTotal
-        RAM_Free = $ramFree
-        OS = $os.Caption.Trim()
-        Build = $os.BuildNumber
-        ResX = $mon.CurrentHorizontalResolution
-        ResY = $mon.CurrentVerticalResolution
-        Hz = $mon.CurrentRefreshRate
-    } | ConvertTo-Json
-    """
-    data = {}
+    # 1. CPU Tespiti (Windows Registry)
+    cpu = "Bilinmeyen İşlemci"
     try:
-        res = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-            capture_output=True,
-            timeout=15
-        )
-        stdout_str = (res.stdout or b"").decode("utf-8", errors="replace").strip()
-        if res.returncode == 0 and stdout_str:
-            data = json.loads(stdout_str)
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as key:
+            cpu = winreg.QueryValueEx(key, "ProcessorNameString")[0].strip()
     except Exception:
         pass
 
-    cpu = data.get("CPU", "AMD Ryzen 5 5600 6-Core Processor")
-    cores = data.get("Cores", 6)
-    threads = data.get("Threads", 12)
-    gpu = data.get("GPU", "NVIDIA GeForce RTX 4060")
-    ram_total = data.get("RAM_Total", 16.0)
-    ram_free = data.get("RAM_Free", 8.0)
-    os_name = data.get("OS", "Windows 11")
-    build = data.get("Build", "26200")
-    res_x = data.get("ResX", 1920) or 1920
-    res_y = data.get("ResY", 1080) or 1080
-    hz = data.get("Hz", 60) or 60
+    cores = os.cpu_count() or 6
+    threads = cores
 
-    # Donanım kodlayıcı tespiti
+    # 2. RAM Tespiti (GlobalMemoryStatusEx)
+    stat = MEMORYSTATUSEX()
+    stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+    ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
+    ram_total = round(stat.ullTotalPhys / (1024**3), 1)
+    ram_free = round(stat.ullAvailPhys / (1024**3), 1)
+
+    # 3. GPU Tespiti (Windows Display Adapter Registry Enum)
+    gpus = []
+    try:
+        base = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, base) as k:
+            i = 0
+            while True:
+                try:
+                    sub = winreg.EnumKey(k, i)
+                    i += 1
+                    if sub.isdigit():
+                        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f"{base}\\{sub}") as sk:
+                            try:
+                                g_name = winreg.QueryValueEx(sk, "DriverDesc")[0]
+                                if g_name and "Basic" not in g_name and g_name not in gpus:
+                                    gpus.append(g_name)
+                            except Exception:
+                                pass
+                except OSError:
+                    break
+    except Exception:
+        pass
+    gpu = ", ".join(gpus) if gpus else "Harici GPU"
+
+    # 4. Ekran Çözünürlüğü ve Yenileme Hızı (Hz)
+    user32 = ctypes.windll.user32
+    res_x = user32.GetSystemMetrics(0) or 1920
+    res_y = user32.GetSystemMetrics(1) or 1080
+
+    dm = DEVMODEW()
+    dm.dmSize = ctypes.sizeof(DEVMODEW)
+    hz = 60
+    try:
+        if user32.EnumDisplaySettingsW(None, -1, ctypes.byref(dm)):
+            hz = dm.dmDisplayFrequency or 60
+    except Exception:
+        hz = 60
+
+    # 5. İşletim Sistemi ve Yapı Numarası
+    wv = sys.getwindowsversion()
+    os_name = f"Windows {11 if wv.build >= 22000 else 10}"
+    build = str(wv.build)
+
+    # 6. Donanım Kodlayıcı Yetenekleri
     gpu_upper = gpu.upper()
-    has_nvenc = ("NVIDIA" in gpu_upper or "GEFORCE" in gpu_upper or "RTX" in gpu_upper or "GTX" in gpu_upper)
-    has_amf = ("RADEON" in gpu_upper or "AMD" in gpu_upper)
-    has_qsv = ("INTEL" in cpu.upper() or "INTEL" in gpu_upper)
-    has_av1 = ("RTX 40" in gpu_upper or "RX 7" in gpu_upper or "ARC" in gpu_upper)
+    has_nvenc = any(x in gpu_upper for x in ["NVIDIA", "GEFORCE", "RTX", "GTX", "QUADRO"])
+    has_amf = any(x in gpu_upper for x in ["RADEON", "AMD", "RX "])
+    has_qsv = ("INTEL" in cpu.upper() or "INTEL" in gpu_upper or "ARC" in gpu_upper)
+    has_av1 = any(x in gpu_upper for x in ["RTX 40", "RTX 50", "RX 7", "ARC", "AV1"])
 
     obs_info = get_obs_info()
 
@@ -138,6 +237,6 @@ def get_system_hardware():
 
 if __name__ == "__main__":
     hw = get_system_hardware()
-    print("Tespit edilen donanım & OBS:")
+    print("Tespit edilen donanım & OBS (Sıfır Konsol / 0 ms):")
     for k, v in hw.items():
         print(f"  {k}: {v}")

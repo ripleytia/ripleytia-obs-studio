@@ -260,7 +260,8 @@ def launch_obs_studio():
     for p in paths:
         if os.path.exists(p):
             workdir = os.path.dirname(p)
-            subprocess.Popen([p], cwd=workdir)
+            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+            subprocess.Popen([p], cwd=workdir, creationflags=flags)
             return True, f"OBS Studio başlatıldı: {p}"
     return False, "OBS Studio belirtilen standart konumlarda bulunamadı!"
 
@@ -270,7 +271,11 @@ def open_obs_appdata():
     """
     p = get_obs_path()
     os.makedirs(p, exist_ok=True)
-    subprocess.Popen(f'explorer.exe "{p}"')
+    try:
+        os.startfile(p)
+    except Exception:
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+        subprocess.Popen(["explorer.exe", p], creationflags=flags)
     return True, p
 
 # -------------------------------------------------------------
