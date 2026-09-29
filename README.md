@@ -1,4 +1,4 @@
-# 🎥 Ripleytia OBS AI Studio (v1.2.0 Güncel Versiyon)
+# 🎥 Ripleytia OBS AI Studio (v1.3.0 Güncel Versiyon)
 
 <p align="center">
   <img src="assets/logo.png" width="160" alt="Ripleytia Logo" />
@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Canlı Yayıncılar ve Rekabetçi Espor Oyuncuları İçin Yapay Zeka Destekli OBS Studio & Sahne/Overlay Stüdyosu</b><br>
-  <i>Dinamik AI Tasarım & Anti-Repetition Motoru • Doğal Dil Renk Uyumlayıcı • Şeffaf Webcam & Chat Çerçeveleri • RNNoise AI Filtresi • Sıfır Kare Kaybı</i>
+  <i>Radikal Düzen Mutasyonu • 6 Sanat Akımı • Tipografi Çiftleri • Katı Geçmiş Kontrolü (Zero Repetition) • RNNoise AI Filtresi</i>
 </p>
 
 <p align="center">
@@ -14,71 +14,46 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-blueviolet?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/UI-CustomTkinter-blueviolet?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Anti--Cheat-100%25%20Uyumlu%20(Safe)-brightgreen?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Sürüm-v1.2.0%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Sürüm-v1.3.0%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
 </p>
 
 ---
 
 ## 📖 Genel Bakış
 
-**Ripleytia OBS AI Studio (v1.2.0)**, Twitch, Kick, YouTube ve TikTok yayıncılarının sahne tasarım sürecini ve yayın kalibrasyonunu baştan sona otomatikleştiren yapay zeka destekli profesyonel bir ekosistemdir.
+**Ripleytia OBS AI Studio (v1.3.0)**, yayıncıların overlay tasarımlarında karşılaştığı "aynı şablonun sadece renkleri değişmiş" sorununu kökten çözen **Radikal Prosedürel Tasarım & Genetik Mutasyon Motoruna** sahiptir.
 
-Kullanıcı yalnızca **Kanal Adı** ve isteğe bağlı bir **Renk / Tema Açıklaması** (örneğin *"siberpunk neon yeşil ve koyu mor"*) girer veya hazır temalardan birini seçer; gelişmiş prosedürel tasarım motoru ve **Anti-Repetition (Tekrar Önleyici)** mimarisi sayesinde her üretimde tamamen eşsiz, daha önce üretilmemiş **1920x1080 Kişiselleştirilmiş Açılış Ekranı (Starting Soon Banner)**, **Şeffaf Webcam Çerçevesi**, **Sohbet Kutusu (Chatbox)** ve **Etkinlik/Hedef Şeridi** çizerek doğrudan OBS sahne koleksiyonuna entegre eder.
-
----
-
-## 🚀 Sürüm 1.2.0 ile Gelen Yeni Özellikler
-
-### 1. 🧬 Eşsiz Prosedürel Tasarım & Anti-Repetition (Tekrar Önleyici) Mimarisi
-* **Sıfır Tekrar Garantisi:** Her üretimde şema imzaları (Archetype + Pattern + Border + Accents) MD5 tabanlı önbellek havuzunda denetlenir; asla birbirinin kopyası veya tekrar eden kalıp tasarımlar üretilmez.
-* **5 Farklı Yapısal Arketip:** `centered_hero` (merkezi kahraman), `split_asymmetric` (bölünmüş asimetrik), `cyber_hud` (teknolojik HUD köşeleri), `minimalist_floating` (modern yüzen kartlar) ve `slant_esports` (dinamik espor şeritleri).
-* **5 Prosedürel Arka Plan Deseni:** Altıgen bal peteği (`hex_mesh`), CRT retro tarama çizgileri (`scanlines`), dinamik diyagonal şeritler (`diagonal_stripes`), dijital nokta matrisi (`dot_matrix`) ve siber ızgara (`cyber_grid`).
-* **4 Özel Köşe & Çerçeve Stili:** Teknolojik köşebentler (`tech_brackets`), çift pahlama kesimler (`double_chamfer`), çok katmanlı neon ışıma (`neon_glow`) ve minimalist yuvarlatılmış köşeler (`minimal_rounded`).
-
-### 2. 🧠 AI Destekli Renk Uyumlayıcı (Color Harmonizer & NLP)
-* **Serbest Metin Girişi:** Kullanıcı *"pastel pembe ve koyu lacivert"*, *"neon yeşil ve mor cyberpunk"* gibi istediği rengi doğal dille yazabilir.
-* **Akıllı Renk Teorisicisi:** Gemini AI veya yerel NLP motoru metni analiz ederek kontrast kurallarına tam uyumlu 5 katmanlı palet (`primary`, `secondary`, `accent`, `bg_start`, `bg_end`, `glow`) üretir.
-* **Altın Oran HSL Üreticisi:** `🎲 Tamamen Rastgele` seçeneğiyle her defasında 137.5° altın açı kullanılarak canlı, kontrastlı ve birbirini boğmayan harmonik paletler oluşturulur.
-
-### 3. 🎨 Yapay Zeka Destekli Akıllı Sahne & Overlay Stüdyosu
-* **Kişiselleştirilmiş Yayın Başlangıç & Mola Sahneleri:** Kanal adınızdan ve temanızdan ilham alan 1920x1080 afişler otomatik üretilerek `⏳ 3 - Yayın Başlıyor` ve `☕ 4 - Kısa Mola (BRB)` sahnelerine yerleştirilir.
-* **Akıllı Webcam Çerçevesi (16:9):** 1920x1080 şeffaf PNG formatında, neon aksanlar, köşe rozetleri ve kanal adı etiketli kamera çerçevesi.
-* **Akıllı Sohbet (Chat) & Etkinlik Şeritleri:** Canlı sohbeti ekranda şık göstermek için yarı saydam cam efektli çerçeve ve ekran üstü Son Takipçi / Son Abone / Hedef barı.
-* **Canlı Görsel Önizleme:** Üretilen tüm banner ve overlay'ler uygulama içerisindeki görsel galeri kartlarında anında önizlenir.
-
-### 4. 🤖 Yapay Zeka Tabanlı RNNoise Gürültü Engelleme
-* Tüm OBS sahne koleksiyonlarındaki mikrofona derin öğrenme destekli **RNNoise (AI Noise Suppression)** filtresi otomatik bağlanır; mekanik klavye sesleri, fan uğultusu ve oda yankısı sıfırlanır.
-
-### 5. 📈 Gerçek Zamanlı Performans Monitörü (0 ms Gecikme)
-* Windows `kernel32` ve `GetSystemTimes` üzerinden sıfır gecikmeli **anlık CPU %**, **RAM %** ve **OBS Studio canlı süreç takibi**.
-* Sistem kaynakları aşırı yüklendiğinde yayıncıyı uyaran akıllı bildirim sistemi.
-
-### 6. 🎬 Akıllı Replay Buffer (Anında Klip & Vurgu Kaydı)
-* Tek tıkla OBS profiline 60 saniyelik Replay Buffer entegre eder. Oyun esnasında tek bir kısayol tuşuyla (F9 / Alt+F10) son 60 saniyelik harika anlar `hybrid_mp4` formatında anında diske kaydedilir.
-
-### 7. 💡 AI İçerik & Yayın Stratejisti
-* Gemini AI veya dahili kural motoru ile yayınınıza özel dikkat çekici başlıklar, izleyici anket soruları ve eğlenceli etkileşim/challenge fikirleri.
-
-### 8. ⚡ Cloudflare CDN Canlı İnternet Hız & Kararlılık Testi
-* Ping, Jitter, İndirme ve Yükleme (Upload Mbps) testi ve tek tıkla upload hızını yapay zeka profiline aktarma.
-
-### 9. 🛡️ ReShade Koruması, Sıfır Konsol Penceresi & Yüksek İşlem Önceliği
-* Tamamen saf Win32 API ile derlenmiştir; hiçbir CMD/PowerShell komut satırı veya siyah pencere açılmaz/yanıp sönmez.
-* Oyun Yakalama kaynaklarında `capture_overlays = false` yaparak FiveM / GTA V çökmesini engeller.
-* OBS Studio'nun yerel `global.ini` dosyasına `ProcessPriority=High` tanımlayarak ağır oyun çatışmalarında sıfır kare kaybı (0 Dropped Frames) sağlar.
+Yalnızca renkleri değil; **ekran yerleşim planını (layout)**, **sanat akımını (Art Movement)**, **geometrik köşe ve kenar fiziğini**, **tipografi eşleşmelerini (font pairings)** ve **gölge/opaklık derinliğini** her tıklamada baştan aşağı değiştirir. Üretilen her tasarım geçmiş hafızasında taranır ve son tasarımlarla **%80'den fazla uyuşan kombinasyonlar anında reddedilerek** yerine yepyeni bir varyasyon üretilir.
 
 ---
 
-## 🛡️ Anti-Cheat & Whitelist Güvenlik Garantisi (PC Check Uyumlu)
+## 🚀 Sürüm 1.3.0 ile Gelen Radikal Yenilikler
 
-Bu yazılım rekabetçi FiveM ve espor sunucularındaki en katı **Anti-Cheat ve PC Check (Bilgisayar Kontrol)** kurallarına %100 uyumlu olarak geliştirilmiştir:
+### 1. 📐 Radikal Düzen ve Kompozisyon Değişimi (Dynamic Layout Mutation)
+Kamera çerçevesi, sohbet kutusu ve etkinlik şeritleri artık sabit bir gridde durmaz; her üretimde ekranın tamamen farklı bölgelerine konuşlanır:
+* **`left_vertical_monolith`**: Ekranın sol sütununa dikey olarak kilitlenen monolitik profesyonel düzen.
+* **`bottom_horizontal_dock`**: Ekranın altını saran geniş bilgi dock'u ve sağ alt kamera.
+* **`asymmetric_split_diagonal`**: Zikzak ve dinamik espor akışlı asimetrik köşe düzeni.
+* **`frameless_decentralized_hud`**: Sıfır çerçeveli, yalnızca telemetri ve şeffaf etiketlerden oluşan modern HUD.
+* **`corner_pinned_compact`**: Ekranın 4 köşesine zarifçe iliştirilmiş minimal modüller.
+* **`brutalist_stacked_cards`**: Sağ tarafta üst üste yığılmış kalın, ağır endüstriyel kartlar.
 
-* 🚫 **Windows Hizmetleri Devre Dışı Bırakılmaz:** Windows'un hiçbir dahili sistem servisi (`services.msc`) kapatılmaz, bozulmaz.
-* 🚫 **Defender Kapatılmaz:** Windows Defender / Gerçek Zamanlı Virüs ve Tehdit Koruması ASLA kapatılmaz. `Defender Control` vb. araçlar kullanılmaz.
-* 🚫 **Cleaner & Uninstaller Değildir:** Sistemde kayıt silici, dosya silici veya uninstaller bulundurmaz.
-* 🚫 **Makro / Strafe / Key Mapping İçermez:** `Keys2XInput`, `Strafe Macro` gibi hile programları içermez.
-* 🚫 **Hileli RPF / Mod İçermez:** `No roll`, `No recoil`, `No bush` gibi oyun bütünlüğünü bozan modifiye dosyalar barındırmaz.
-* ✅ **Sadece OBS Odaklıdır:** Yalnızca OBS Studio yapılandırma dosyalarını (`basic.ini`, `service.json`, `scenes.json`) oluşturur. Yetkili kontrollerinde güvenle kullanılabilir.
+### 2. 🏛️ 6 Farklı Sanat Akımı ve Görsel Fizik (Art Movements)
+Her tasarım isteğine baskın bir tasarım felsefesi atanır:
+* **Cyberpunk HUD & High-Tech:** 45° pah (chamfer) kırılmış köşeler, çok katmanlı neon ışıma, telemetri koordinatları ve köşebentler.
+* **Neo-Brutalism & Industrial Raw:** 4px kalınlığında sert siyah kenarlıklar, 8x8 offset blok gölgeler, dev arka plan rakamları.
+* **Swiss International & Clean Grid:** 1px hassas çizgiler, matematiksel sütun kılavuzları, sıfır gölge ve mükemmel asimetrik boşluk dengesi.
+* **Minimal Architectural & Fine Line:** Zarif yuvarlatılmış köşeler, %45 şeffaf buzlu cam dokusu ve saç teli inceliğinde çizgiler.
+* **Y2K Acid & Retro-Futurism:** Yuvarlak hap (pill) formları, kromik rozetler ve retro-fütüristik estetik.
+* **Dark Esports Mecha:** Agresif espor kesimleri, 15° eğimli zırh şeritleri ve tehlike ikaz detayları.
+
+### 3. ✍️ Tipografi ve Font Çeşitliliği (Typography Mutation)
+* **Zıt Karakterli Font Çiftleri:** Başlıklar ve alt metinler için kontrast oluşturan ikili font eşleşmeleri (`display_heavy`, `monospace`, `swiss`, `geometric`, `serif`).
+* **Harf Aralığı & Ağırlık Fiziği:** Negatif harf aralığından (Swiss tracking -1px) ultra geniş siber aralıklara (+6px) ve Black 900 ağırlığına kadar dinamik tipografi.
+
+### 4. 🛡️ Katı Geçmiş Kontrolü (Hard Unique Design Cache)
+* Üretilen her tasarımın yapısal şeması (`Arketip + Akım + Font Çifti + Köşe Geometrisi`) vektör olarak bellekte saklanır.
+* Son 15 tasarımla **%80'den fazla benzerlik gösteren hiçbir şema onaylanmaz**, sistem arkada sessizce yeni bir varyasyon mutasyonu işletir.
 
 ---
 
@@ -89,9 +64,9 @@ Uygulama açık kaynak kodludur, hiçbir reklam veya arka plan zararlısı içer
 * **Dosya Adı:** `Ripleytia OBS AI Studio.exe`
 * **SHA-256 Özeti:**
   ```text
-  df42a3abca6358cb1b68c18b3247895cc902f0caececf02409e8eda2222b7f79
+  ef40046c5cd8c8dec305b9e2c2a9ae871a93fbfc5cc5593fde218dcb4e341ad9
   ```
-* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/df42a3abca6358cb1b68c18b3247895cc902f0caececf02409e8eda2222b7f79)
+* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/ef40046c5cd8c8dec305b9e2c2a9ae871a93fbfc5cc5593fde218dcb4e341ad9)
 
 ---
 
@@ -139,7 +114,7 @@ ripleytia-obs-studio/
 │   └── performance_monitor.py # 0 ms gecikmeli CPU, RAM & OBS süreç monitörü
 ├── main.py                 # CustomTkinter 8 sekmeli modern grafik arayüzü
 ├── build_exe.py            # PyInstaller derleme betiği
-├── version_info.txt        # Windows PE binary sürüm bilgisi (v1.2.0)
+├── version_info.txt        # Windows PE binary sürüm bilgisi (v1.3.0)
 ├── .gitignore              # Git yoksayma kuralları
 └── README.md               # Detaylı dokümantasyon
 ```

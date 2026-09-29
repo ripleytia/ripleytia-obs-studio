@@ -71,7 +71,7 @@ class RipleytiaOBSApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Ripleytia OBS AI Studio v1.2.0 (Dinamik AI Tasarım & Anti-Repetition) - Profesyonel Yapay Zeka Destekli Sahne & Yayın Stüdyosu")
+        self.title("Ripleytia OBS AI Studio v1.3.0 (Radikal Tasarım Mutasyonu & Sanat Akımları) - Profesyonel Yapay Zeka Destekli Sahne & Yayın Stüdyosu")
         self.geometry("1200x860")
         self.minsize(1080, 740)
         self.configure(fg_color=THEME["bg_main"])
@@ -121,7 +121,7 @@ class RipleytiaOBSApp(ctk.CTk):
         )
         self.tabview.grid(row=1, column=0, sticky="nsew", padx=16, pady=10)
 
-        # Sekme İsimleri (v1.1.0 Genişletilmiş)
+        # Sekme İsimleri (v1.3.0 Genişletilmiş)
         self.tab_ai_scenes = self.tabview.add("🎨 AI Sahne & Overlay Stüdyosu")
         self.tab_dash = self.tabview.add("📊 Performans & Donanım")
         self.tab_speed = self.tabview.add("⚡ Canlı Hız Testi")
@@ -129,7 +129,7 @@ class RipleytiaOBSApp(ctk.CTk):
         self.tab_manual = self.tabview.add("🛠️ Manuel Gelişmiş Stüdyo")
         self.tab_media = self.tabview.add("🖼️ Medya & Varlık Kütüphanesi")
         self.tab_audio = self.tabview.add("🎙️ Ses & AI Gürültü Engelleme")
-        self.tab_about = self.tabview.add("ℹ️ Rehber & Yenilikler (v1.2.0)")
+        self.tab_about = self.tabview.add("ℹ️ Rehber & Yenilikler (v1.3.0)")
 
         # Sekme Yapıcıları
         self._build_ai_scenes_tab()
@@ -148,7 +148,7 @@ class RipleytiaOBSApp(ctk.CTk):
 
         self.status_label = ctk.CTkLabel(
             self.status_bar,
-            text="✨ Ripleytia OBS AI Studio v1.2.0 Hazır • Dinamik AI Tasarım, Anti-Repetition & ReShade Koruması",
+            text="✨ Ripleytia OBS AI Studio v1.3.0 Hazır • Radikal Tasarım Mutasyonu, Sanat Akımları & Anti-Repetition",
             font=("Segoe UI", 11),
             text_color=THEME["text_muted"]
         )
@@ -156,7 +156,7 @@ class RipleytiaOBSApp(ctk.CTk):
 
         self.ver_label = ctk.CTkLabel(
             self.status_bar,
-            text="v1.2.0 (Güncel Versiyon) • %100 PC Check & Whitelist Uyumlu",
+            text="v1.3.0 (Güncel Versiyon) • %100 PC Check & Whitelist Uyumlu",
             font=("Segoe UI", 11, "bold"),
             text_color=THEME["accent_hover"]
         )
@@ -312,13 +312,19 @@ class RipleytiaOBSApp(ctk.CTk):
         self.ent_scene_channel.insert(0, "Ripleytia")
         self.ent_scene_channel.grid(row=1, column=0, sticky="ew", padx=(0, 8), pady=(0, 12))
 
-        # 2. Görsel Tema & Preset Seçimi
-        lbl_th = ctk.CTkLabel(grid, text="2. Görsel Tema Preseti (Anti-Repetition):", font=("Segoe UI", 12, "bold"), text_color=THEME["text_main"])
+        # 2. Görsel Tema & Sanat Akımı Preseti
+        lbl_th = ctk.CTkLabel(grid, text="2. Sanat Akımı & Tema (Anti-Repetition):", font=("Segoe UI", 12, "bold"), text_color=THEME["text_main"])
         lbl_th.grid(row=0, column=1, sticky="w", pady=(4, 2))
         self.combo_theme = ctk.CTkComboBox(
             grid,
             values=[
-                "🎲 Tamamen Rastgele (Anti-Repetition)",
+                "🎲 Tamamen Rastgele (Radikal Mutasyon & Anti-Repetition)",
+                "Cyberpunk HUD & High-Tech",
+                "Neo-Brutalism & Industrial Raw",
+                "Swiss International & Clean Grid",
+                "Minimal Architectural & Fine Line",
+                "Y2K Acid & Retro-Futurism",
+                "Dark Esports Mecha & Angular Aggression",
                 "Cyber Gothic Purple",
                 "Neon Cyberpunk (Mavi/Pembe)",
                 "Blood Red (Kırmızı/Siyah)",
@@ -331,7 +337,7 @@ class RipleytiaOBSApp(ctk.CTk):
             button_color=THEME["accent_primary"],
             text_color=THEME["text_main"]
         )
-        self.combo_theme.set("🎲 Tamamen Rastgele (Anti-Repetition)")
+        self.combo_theme.set("🎲 Tamamen Rastgele (Radikal Mutasyon & Anti-Repetition)")
         self.combo_theme.grid(row=1, column=1, sticky="ew", padx=8, pady=(0, 12))
 
         # 3. Oyun / Yayın Kategorisi
@@ -449,35 +455,54 @@ class RipleytiaOBSApp(ctk.CTk):
         except Exception:
             pass
 
-        layout_obj = res.get("layout")
-        palette_obj = res.get("palette")
-        arch_name = layout_obj.archetype if layout_obj else "Prosedürel"
-        border_name = layout_obj.border_style if layout_obj else "Dinamik"
-        pattern_name = layout_obj.pattern_type if layout_obj else "Dinamik"
-        pal_name = palette_obj.name if palette_obj else "Özel"
+        spec = res.get("spec")
+        if spec:
+            art_name = spec.art_movement.value
+            arch_name = spec.layout.archetype.value
+            pattern_name = spec.layout.pattern_type
+            border_name = f"{spec.movement_physics.corner_style} ({spec.movement_physics.border_width}px)"
+            shadow_name = spec.movement_physics.shadow_type
+            typo_name = spec.typography.name
+            pal_name = spec.palette.name
+            design_id = spec.design_id
+        else:
+            art_name = "Özgün Sanat Akımı"
+            arch_name = "Prosedürel"
+            pattern_name = "Dinamik"
+            border_name = "Dinamik"
+            shadow_name = "none"
+            typo_name = "Sistem Fontu"
+            pal_name = "Özel"
+            design_id = "RIPLEYTIA-V13"
 
-        log_txt = f"""🎉 YENİ NESİL EŞSİZ SAHNE & OVERLAY PAKETİ BAŞARIYLA ÜRETİLDİ!
-- Eşsiz Şablon Türü (Archetype)   : {arch_name} (Anti-Repetition Onaylı)
-- Çerçeve Geometrisi              : {border_name}
+        ticker_p = assets.get("ticker_overlay", "")
+
+        log_txt = f"""🎉 RADİKAL PROSEDÜREL SAHNE & OVERLAY PAKETİ BAŞARIYLA ÜRETİLDİ!
+- Tasarım Kimliği (Design ID)     : {design_id} (Sıfır Tekrar - Anti-Repetition Onaylı)
+- Baskın Sanat Akımı (Art Style)  : {art_name}
+- Kompozisyon & Düzen Şeması     : {arch_name} (Dinamik Koordinat Yerleşimi)
+- Tipografi & Font Çifti         : {typo_name}
+- Geometri & Kenarlık Fiziği      : {border_name} | Gölge: {shadow_name}
 - Arka Plan Desen Algoritması     : {pattern_name}
-- Seçilen / Türetilen Renk Paleti : {pal_name}
+- Renk Paleti (Harmonizer)        : {pal_name}
 - Sahne Koleksiyonu Adı           : {res.get('collection_name')}
 - OBS JSON Dosya Yolu             : {res.get('filepath')}
 - Açılış Ekranı Bannerı           : {start_p}
 - Webcam Çerçevesi                : {cam_p}
 - Sohbet Çerçevesi                : {chat_p}
+- Etkinlik Şeridi (Ticker)        : {ticker_p}
 - AI Ses Filtresi                 : Mikrofona RNNoise Yapay Zeka Gürültü Engelleme bağlandı!
 - ReShade Koruması                : capture_overlays = false (FiveM / GTA V çökmez)
 
 OBS Studio'yu açıp üst menüden 'Sahne Koleksiyonu' -> '{res.get('collection_name')}' seçerek yayına başlayabilirsiniz!
-Her butona bastığınızda sistem asla kendini tekrar etmeyen yepyeni bir tasarım düzeni üretecektir!
+Her butona bastığınızda düzen, yerleşim, tipografi ve geometri kökten değişir!
 """
         self.txt_ai_scene_log.configure(state="normal")
         self.txt_ai_scene_log.delete("1.0", "end")
         self.txt_ai_scene_log.insert("1.0", log_txt)
         self.txt_ai_scene_log.configure(state="disabled")
 
-        self._set_status(f"🎉 '{res.get('collection_name')}' sahne paketi OBS'e eklendi! ({arch_name} | {pal_name})", THEME["success"])
+        self._set_status(f"🎉 '{res.get('collection_name')}' sahne paketi OBS'e eklendi! ({art_name} | {arch_name})", THEME["success"])
 
     # ==========================================================================
     # SEKME 2: PERFORMANS MONİTÖRÜ & DONANIM (DASHBOARD)
