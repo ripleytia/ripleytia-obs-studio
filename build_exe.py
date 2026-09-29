@@ -8,14 +8,17 @@ desktop_path = r"C:\Users\Ripleytia\Desktop"
 output_name = "Ripleytia OBS AI Studio"
 ico_path = os.path.join(base_dir, "assets", "icon.ico")
 
+version_path = os.path.join(base_dir, "version_info.txt")
+
 cmd = [
     "pyinstaller",
     "--noconfirm",
+    "--clean",
     "--onefile",
     "--windowed",
-    "--uac-admin",
     f"--name={output_name}",
     f"--icon={ico_path}",
+    f"--version-file={version_path}",
     "--collect-all=customtkinter",
     "--add-data=engine;engine",
     "--add-data=assets;assets",

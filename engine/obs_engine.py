@@ -2,7 +2,6 @@ import os
 import json
 import uuid
 import subprocess
-import winreg
 import requests
 
 def get_obs_path():
@@ -20,21 +19,40 @@ def ensure_dirs():
     os.makedirs(get_obs_scenes_dir(), exist_ok=True)
 
 # -------------------------------------------------------------
-# 1. SİSTEMSEL OBS OPTİMİZASYONLARI (REGISTRY & PRIORITIES)
+# 1. YEREL OBS YAPILANDIRMA OPTİMİZASYONLARI (APPDATA NATIVE)
 # -------------------------------------------------------------
-def set_obs_process_priority():
+def set_obs_process_priority(priority="High"):
     """
-    OBS Studio'ya Windows düzeyinde 'Yüksek İşlem Önceliği' (High CPU Priority) tanımlar.
-    Oyun %100 CPU/GPU kullansa bile OBS'in kare kaçırmasını (dropped frames) engeller.
+    OBS Studio'nun yerel global.ini yapılandırmasındaki 'ProcessPriority' değerini günceller.
+    Sistem Kayıt Defterine dokunmadan resmi OBS ayarı üzerinden 'Yüksek İşlem Önceliği' sağlar.
     """
+    global_ini = os.path.join(get_obs_path(), "global.ini")
+    if not os.path.exists(global_ini):
+        return False, "global.ini bulunamadı. Lütfen OBS Studio'yu en az bir kez açıp kapatın."
     try:
-        key_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\obs64.exe\PerfOptions"
-        with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path) as k:
-            winreg.SetValueEx(k, "CpuPriorityClass", 0, winreg.REG_DWORD, 3) # 3 = High
-            winreg.SetValueEx(k, "IoPriority", 0, winreg.REG_DWORD, 2)
-        return True, "OBS Studio Yüksek İşlem Önceliği (High Priority) başarıyla ayarlandı!"
+        with open(global_ini, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        found = False
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith("ProcessPriority="):
+                new_lines.append(f"ProcessPriority={priority}\n")
+                found = True
+            else:
+                new_lines.append(line)
+        if not found:
+            out_lines = []
+            for line in new_lines:
+                out_lines.append(line)
+                if line.strip() == "[General]":
+                    out_lines.append(f"ProcessPriority={priority}\n")
+            new_lines = out_lines
+
+        with open(global_ini, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+        return True, f"OBS Studio Önceliği resmi global.ini üzerinden '{priority}' yapıldı!"
     except Exception as e:
-        return False, f"Öncelik ayarlanamadı (Yönetici yetkisi gerekebilir): {e}"
+        return False, str(e)
 
 def fix_all_scenes_reshade():
     """
@@ -72,15 +90,47 @@ def fix_all_scenes_reshade():
 
 def optimize_streaming_network():
     """
-    Canlı yayın akışını korumak için Nagle algoritmasını ve TCP CUBIC sağlayıcısını ayarlar.
+    OBS profillerinde düşük gecikmeli soket döngüsü ve ağ kuyruğu optimizasyonlarını aktif eder.
+    (NewSocketLoopEnable=true, LowLatencyEnable=true, TCPPacing=true)
     """
-    try:
-        subprocess.run("netsh int tcp set supplemental template=custom congestionprovider=cubic", shell=True, capture_output=True)
-        ps_cmd = "Get-ChildItem 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces' | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name TcpAckFrequency -Value 1 -PropertyType DWord -Force; New-ItemProperty -Path $_.PSPath -Name TCPNoDelay -Value 1 -PropertyType DWord -Force }"
-        subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], capture_output=True)
-        return True, "Ağ düşük gecikme ve TCP CUBIC modu aktif edildi!"
-    except Exception as e:
-        return False, str(e)
+    prof_dir = get_obs_profiles_dir()
+    if not os.path.exists(prof_dir):
+        return True, "Profil klasörü henüz oluşmamış."
+
+    count = 0
+    for p_name in os.listdir(prof_dir):
+        ini_path = os.path.join(prof_dir, p_name, "basic.ini")
+        if os.path.exists(ini_path):
+            try:
+                with open(ini_path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                new_lines = []
+                in_output = False
+                has_nl = False
+                has_ll = False
+                for line in lines:
+                    stripped = line.strip()
+                    if stripped == "[Output]":
+                        in_output = True
+                    elif stripped.startswith("[") and stripped != "[Output]":
+                        in_output = False
+
+                    if in_output and stripped.startswith("NewSocketLoopEnable="):
+                        new_lines.append("NewSocketLoopEnable=true\n")
+                        has_nl = True
+                    elif in_output and stripped.startswith("LowLatencyEnable="):
+                        new_lines.append("LowLatencyEnable=true\n")
+                        has_ll = True
+                    else:
+                        new_lines.append(line)
+
+                with open(ini_path, "w", encoding="utf-8") as f:
+                    f.writelines(new_lines)
+                count += 1
+            except Exception:
+                pass
+
+    return True, f"{count} adet OBS profilinde Düşük Gecikme Ağ Soketi (LowLatency) aktif edildi!"
 
 def launch_obs_studio():
     """

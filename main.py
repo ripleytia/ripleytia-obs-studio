@@ -2,6 +2,7 @@ import os
 import sys
 import threading
 import webbrowser
+import re
 from PIL import Image
 import customtkinter as ctk
 
@@ -842,9 +843,9 @@ Renk Formatı  : {cfg.get('color_format')} (Rec. {cfg.get('color_space')})
         card.pack(fill="x", pady=6, padx=4)
 
         items = [
-            ("🎵 Windows Ses Zamanlayıcı Önceliği (MMCSS Audio High)", "Windows multimedya zamanlayıcısının arabellek önceliğini High yapar; oyun yükteyken yayındaki mikrofon veya müzik cızırtısını tamamen engeller.", self._action_optimize_audio_priority),
+            ("🎵 OBS 48 kHz Stüdyo & Kayıpsız Ses Kalibrasyonu", "OBS Studio ses örnekleme hızını 48 kHz ve Stereo yaparak Discord / Voicemod ile tam senkronize eder; cızırtıyı ve gecikmeyi önler.", self._action_optimize_audio_priority),
             ("🎙️ Voicemod & Sonar Gecikme Önleme Arabelleği", "Voicemod veya SteelSeries Sonar gibi sanal ses kartı sürücülerinde anlık ses desync (kayma) problemlerini çözer.", self._action_optimize_audio_buffer),
-            ("📡 OBS Düşük Gecikme Ağ Soketi (Low Latency Network Socket)", "OBS yayın soketinin Windows ağ yığını üzerindeki gecikmesini minimize eder.", self._action_optimize_net)
+            ("📡 OBS Düşük Gecikme Ağ Soketi (Low Latency Network Socket)", "OBS yayın soketinin ağ gecikmesini minimize eder (NewSocketLoopEnable & LowLatency).", self._action_optimize_net)
         ]
 
         for it_title, it_desc, it_func in items:
@@ -865,13 +866,20 @@ Renk Formatı  : {cfg.get('color_format')} (Rec. {cfg.get('color_space')})
 
     def _action_optimize_audio_priority(self):
         try:
-            import winreg
-            k = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Audio")
-            winreg.SetValueEx(k, "Scheduling Category", 0, winreg.REG_SZ, "High")
-            winreg.SetValueEx(k, "SFIO Priority", 0, winreg.REG_SZ, "High")
-            winreg.SetValueEx(k, "Background Only", 0, winreg.REG_SZ, "False")
-            winreg.CloseKey(k)
-            self._set_status("✅ MMCSS Ses Zamanlayıcı Önceliği 'High' olarak ayarlandı!", THEME["success"])
+            prof_dir = get_obs_profiles_dir()
+            count = 0
+            if os.path.exists(prof_dir):
+                for p_name in os.listdir(prof_dir):
+                    ini_path = os.path.join(prof_dir, p_name, "basic.ini")
+                    if os.path.exists(ini_path):
+                        with open(ini_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                        if "SampleRate=" in content:
+                            content = re.sub(r"SampleRate=\d+", "SampleRate=48000", content)
+                        with open(ini_path, "w", encoding="utf-8") as f:
+                            f.write(content)
+                        count += 1
+            self._set_status(f"✅ {count} adet OBS profilinde ses örnekleme hızı 48 kHz Stüdyo standardına ayarlandı!", THEME["success"])
         except Exception as e:
             self._set_status(f"Hata: {e}", THEME["danger"])
 

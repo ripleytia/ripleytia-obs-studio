@@ -1,7 +1,6 @@
 import subprocess
 import json
 import os
-import winreg
 
 def get_obs_info():
     """

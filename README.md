@@ -90,9 +90,9 @@ Uygulama açık kaynak kodludur, hiçbir reklam veya arka plan zararlısı içer
 * **Dosya Adı:** `Ripleytia OBS AI Studio.exe`
 * **SHA-256 Özeti:**
   ```text
-  b7e2d32f2c74c43bd0b584bbf7fbeee331aa1bc1bded543c077349fde1bd9f9e
+  b06440e73b26f8459e26dc980d6512c88b65b6bb553417784cb57c472ad79658
   ```
-* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/b7e2d32f2c74c43bd0b584bbf7fbeee331aa1bc1bded543c077349fde1bd9f9e)
+* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/b06440e73b26f8459e26dc980d6512c88b65b6bb553417784cb57c472ad79658)
 
 ---
 
