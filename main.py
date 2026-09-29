@@ -31,8 +31,7 @@ from engine.ai_designer import (
     generate_chat_overlay,
     generate_event_ticker,
     generate_ai_stream_strategy,
-    get_appdata_obs_assets_dir,
-    THEME_PALETTES
+    get_appdata_obs_assets_dir
 )
 from engine.performance_monitor import get_monitor
 
@@ -72,7 +71,7 @@ class RipleytiaOBSApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Ripleytia OBS AI Studio v1.1.0 (Güncel Versiyon) - Profesyonel Yapay Zeka Destekli Sahne & Yayın Stüdyosu")
+        self.title("Ripleytia OBS AI Studio v1.2.0 (Dinamik AI Tasarım & Anti-Repetition) - Profesyonel Yapay Zeka Destekli Sahne & Yayın Stüdyosu")
         self.geometry("1200x860")
         self.minsize(1080, 740)
         self.configure(fg_color=THEME["bg_main"])
@@ -130,7 +129,7 @@ class RipleytiaOBSApp(ctk.CTk):
         self.tab_manual = self.tabview.add("🛠️ Manuel Gelişmiş Stüdyo")
         self.tab_media = self.tabview.add("🖼️ Medya & Varlık Kütüphanesi")
         self.tab_audio = self.tabview.add("🎙️ Ses & AI Gürültü Engelleme")
-        self.tab_about = self.tabview.add("ℹ️ Rehber & Yenilikler (v1.1.0)")
+        self.tab_about = self.tabview.add("ℹ️ Rehber & Yenilikler (v1.2.0)")
 
         # Sekme Yapıcıları
         self._build_ai_scenes_tab()
@@ -149,7 +148,7 @@ class RipleytiaOBSApp(ctk.CTk):
 
         self.status_label = ctk.CTkLabel(
             self.status_bar,
-            text="✨ Ripleytia OBS AI Studio v1.1.0 Hazır • ReShade Koruması, RNNoise AI ve Replay Buffer Aktif",
+            text="✨ Ripleytia OBS AI Studio v1.2.0 Hazır • Dinamik AI Tasarım, Anti-Repetition & ReShade Koruması",
             font=("Segoe UI", 11),
             text_color=THEME["text_muted"]
         )
@@ -157,7 +156,7 @@ class RipleytiaOBSApp(ctk.CTk):
 
         self.ver_label = ctk.CTkLabel(
             self.status_bar,
-            text="v1.1.0 (Güncel Versiyon) • %100 PC Check & Whitelist Uyumlu",
+            text="v1.2.0 (Güncel Versiyon) • %100 PC Check & Whitelist Uyumlu",
             font=("Segoe UI", 11, "bold"),
             text_color=THEME["accent_hover"]
         )
@@ -313,11 +312,26 @@ class RipleytiaOBSApp(ctk.CTk):
         self.ent_scene_channel.insert(0, "Ripleytia")
         self.ent_scene_channel.grid(row=1, column=0, sticky="ew", padx=(0, 8), pady=(0, 12))
 
-        # 2. Renk ve Tema Paleti
-        lbl_th = ctk.CTkLabel(grid, text="2. Görsel Tema & Renk Paleti:", font=("Segoe UI", 12, "bold"), text_color=THEME["text_main"])
+        # 2. Görsel Tema & Preset Seçimi
+        lbl_th = ctk.CTkLabel(grid, text="2. Görsel Tema Preseti (Anti-Repetition):", font=("Segoe UI", 12, "bold"), text_color=THEME["text_main"])
         lbl_th.grid(row=0, column=1, sticky="w", pady=(4, 2))
-        self.combo_theme = ctk.CTkComboBox(grid, values=["Cyber Gothic Purple", "Neon Cyberpunk (Mavi/Pembe)", "Blood Red (Kırmızı/Siyah)", "Emerald Green (Yeşil/Siyah)"], fg_color="#120e1c", border_color=THEME["border"], button_color=THEME["accent_primary"], text_color=THEME["text_main"])
-        self.combo_theme.set("Cyber Gothic Purple")
+        self.combo_theme = ctk.CTkComboBox(
+            grid,
+            values=[
+                "🎲 Tamamen Rastgele (Anti-Repetition)",
+                "Cyber Gothic Purple",
+                "Neon Cyberpunk (Mavi/Pembe)",
+                "Blood Red (Kırmızı/Siyah)",
+                "Emerald Green (Yeşil/Siyah)",
+                "Retro Synthwave",
+                "Minimalist & Clean"
+            ],
+            fg_color="#120e1c",
+            border_color=THEME["border"],
+            button_color=THEME["accent_primary"],
+            text_color=THEME["text_main"]
+        )
+        self.combo_theme.set("🎲 Tamamen Rastgele (Anti-Repetition)")
         self.combo_theme.grid(row=1, column=1, sticky="ew", padx=8, pady=(0, 12))
 
         # 3. Oyun / Yayın Kategorisi
@@ -327,22 +341,28 @@ class RipleytiaOBSApp(ctk.CTk):
         self.combo_game.set("FiveM / GTA V (Roleplay)")
         self.combo_game.grid(row=1, column=2, sticky="ew", padx=(8, 0), pady=(0, 12))
 
-        # 4. Koleksiyon Adı & Özel Slogan (İkinci Satır)
-        lbl_col = ctk.CTkLabel(grid, text="4. OBS Sahne Koleksiyonu Adı:", font=("Segoe UI", 12, "bold"), text_color=THEME["text_main"])
-        lbl_col.grid(row=2, column=0, sticky="w", pady=(4, 2))
+        # 4. Doğal Dilde Özel Renk Talebi (AI Prompt)
+        lbl_col_q = ctk.CTkLabel(grid, text="4. Özel Renk Talebi (Doğal Dil / AI):", font=("Segoe UI", 12, "bold"), text_color=THEME["text_main"])
+        lbl_col_q.grid(row=2, column=0, sticky="w", pady=(4, 2))
+        self.ent_ai_color_query = ctk.CTkEntry(grid, placeholder_text="Örn: siberpunk moru ve neon yeşil, pastel mavi...", fg_color="#120e1c", border_color=THEME["border"], text_color=THEME["text_main"])
+        self.ent_ai_color_query.grid(row=3, column=0, sticky="ew", padx=(0, 8), pady=(0, 12))
+
+        # 5. Koleksiyon Adı & Özel Slogan
+        lbl_col = ctk.CTkLabel(grid, text="5. OBS Sahne Koleksiyonu Adı:", font=("Segoe UI", 12, "bold"), text_color=THEME["text_main"])
+        lbl_col.grid(row=2, column=1, sticky="w", pady=(4, 2))
         self.ent_ai_col_name = ctk.CTkEntry(grid, fg_color="#120e1c", border_color=THEME["border"], text_color=THEME["text_main"])
         self.ent_ai_col_name.insert(0, "Ripleytia AI Stream Pack")
-        self.ent_ai_col_name.grid(row=3, column=0, sticky="ew", padx=(0, 8), pady=(0, 12))
+        self.ent_ai_col_name.grid(row=3, column=1, sticky="ew", padx=8, pady=(0, 12))
 
-        lbl_slog = ctk.CTkLabel(grid, text="5. Açılış Ekranı Sloganı (Opsiyonel):", font=("Segoe UI", 12, "bold"), text_color=THEME["text_main"])
-        lbl_slog.grid(row=2, column=1, columnspan=2, sticky="w", pady=(4, 2))
-        self.ent_ai_slogan = ctk.CTkEntry(grid, placeholder_text="Boş bırakılırsa AI en uygun sloganı yazar (Örn: YAYIN BİRAZDAN BAŞLIYOR...)", fg_color="#120e1c", border_color=THEME["border"], text_color=THEME["text_main"])
-        self.ent_ai_slogan.grid(row=3, column=1, columnspan=2, sticky="ew", padx=(8, 0), pady=(0, 12))
+        lbl_slog = ctk.CTkLabel(grid, text="6. Açılış Ekranı Sloganı (Opsiyonel):", font=("Segoe UI", 12, "bold"), text_color=THEME["text_main"])
+        lbl_slog.grid(row=2, column=2, sticky="w", pady=(4, 2))
+        self.ent_ai_slogan = ctk.CTkEntry(grid, placeholder_text="Boş bırakılırsa AI en uygun sloganı yazar...", fg_color="#120e1c", border_color=THEME["border"], text_color=THEME["text_main"])
+        self.ent_ai_slogan.grid(row=3, column=2, sticky="ew", padx=(8, 0), pady=(0, 12))
 
         # Üret Butonu
         self.btn_create_ai_pack = ctk.CTkButton(
             form_card,
-            text="✨ Yapay Zeka İle Tüm Sahne & Overlay Paketini Tasarla ve OBS'e Ekle",
+            text="🎲 Benzersiz Yeni Tasarım Türet & OBS'e Ekle (Anti-Repetition)",
             font=("Segoe UI", 14, "bold"),
             fg_color=THEME["accent_primary"],
             hover_color=THEME["accent_hover"],
@@ -367,9 +387,9 @@ class RipleytiaOBSApp(ctk.CTk):
         self.lbl_prev_chat = self._create_preview_slot(self.gal_cards_frame, 2, "Sohbet Kutusu Çerçevesi")
 
         # Bilgi ve Çıktı Raporu
-        self.txt_ai_scene_log = ctk.CTkTextbox(gal_box, height=130, font=("Consolas", 12), fg_color="#120e1c", text_color=THEME["text_main"], border_width=1, border_color=THEME["border"])
+        self.txt_ai_scene_log = ctk.CTkTextbox(gal_box, height=140, font=("Consolas", 12), fg_color="#120e1c", text_color=THEME["text_main"], border_width=1, border_color=THEME["border"])
         self.txt_ai_scene_log.pack(fill="both", expand=True, padx=16, pady=(0, 16))
-        self.txt_ai_scene_log.insert("1.0", "Yukarıdaki butona tıkladığınızda banner'lar ve overlay'ler anında oluşturulup burada önizlenecektir...")
+        self.txt_ai_scene_log.insert("1.0", "Yukarıdaki butona tıkladığınızda benzersiz şablon ve renk paleti hesaplanıp burada önizlenecektir...")
         self.txt_ai_scene_log.configure(state="disabled")
 
     def _create_preview_slot(self, parent, col, title):
@@ -386,31 +406,27 @@ class RipleytiaOBSApp(ctk.CTk):
     def _generate_full_ai_pack_action(self):
         ch_name = self.ent_scene_channel.get().strip() or "Ripleytia"
         raw_theme = self.combo_theme.get()
-        if "Cyberpunk" in raw_theme:
-            theme_key = "neon_cyberpunk"
-        elif "Red" in raw_theme:
-            theme_key = "blood_red"
-        elif "Green" in raw_theme:
-            theme_key = "emerald_green"
-        else:
-            theme_key = "cyber_purple"
-
+        color_query = self.ent_ai_color_query.get().strip()
         col_name = self.ent_ai_col_name.get().strip() or f"Ripleytia AI - {ch_name}"
 
-        self.btn_create_ai_pack.configure(state="disabled", text="⏳ Grafikler Çiziliyor ve OBS'e Yazılıyor...")
-        self._set_status("🎨 Yapay zeka yayın paketini tasarlıyor...", THEME["cyan"])
+        self.btn_create_ai_pack.configure(state="disabled", text="⏳ Eşsiz Şablon Türetiliyor & Grafikler Çiziliyor...")
+        self._set_status("🎨 Yapay zeka eşsiz yayın paketini tasarlıyor...", THEME["cyan"])
 
         def worker():
-            res = build_ai_scene_collection(channel_name=ch_name, theme_name=theme_key, collection_name=col_name)
+            res = build_ai_scene_collection(
+                channel_name=ch_name,
+                theme_name=raw_theme,
+                collection_name=col_name,
+                custom_color_query=color_query
+            )
             self.after(0, lambda: self._finish_ai_pack(ch_name, res))
 
         threading.Thread(target=worker, daemon=True).start()
 
     def _finish_ai_pack(self, ch_name, res):
-        self.btn_create_ai_pack.configure(state="normal", text="✨ Yapay Zeka İle Tüm Sahne & Overlay Paketini Tasarla ve OBS'e Ekle")
+        self.btn_create_ai_pack.configure(state="normal", text="🎲 Benzersiz Yeni Tasarım Türet & OBS'e Ekle (Anti-Repetition)")
 
         assets = res.get("assets", {})
-        # Önizlemeleri yükle
         start_p = assets.get("start_banner")
         cam_p = assets.get("webcam_overlay")
         chat_p = assets.get("chat_overlay")
@@ -433,23 +449,35 @@ class RipleytiaOBSApp(ctk.CTk):
         except Exception:
             pass
 
-        log_txt = f"""🎉 AKILLI SAHNE & OVERLAY PAKETİ BAŞARIYLA ÜRETİLDİ!
-- Sahne Koleksiyonu Adı : {res.get('collection_name')}
-- OBS JSON Dosya Yolu   : {res.get('filepath')}
-- Açılış Ekranı Bannerı : {start_p}
-- Webcam Çerçevesi      : {cam_p}
-- Sohbet Çerçevesi      : {chat_p}
-- AI Ses Filtresi       : Mikrofona RNNoise Yapay Zeka Gürültü Engelleme bağlandı!
-- ReShade Koruması      : capture_overlays = false (FiveM / GTA V çökmez)
+        layout_obj = res.get("layout")
+        palette_obj = res.get("palette")
+        arch_name = layout_obj.archetype if layout_obj else "Prosedürel"
+        border_name = layout_obj.border_style if layout_obj else "Dinamik"
+        pattern_name = layout_obj.pattern_type if layout_obj else "Dinamik"
+        pal_name = palette_obj.name if palette_obj else "Özel"
+
+        log_txt = f"""🎉 YENİ NESİL EŞSİZ SAHNE & OVERLAY PAKETİ BAŞARIYLA ÜRETİLDİ!
+- Eşsiz Şablon Türü (Archetype)   : {arch_name} (Anti-Repetition Onaylı)
+- Çerçeve Geometrisi              : {border_name}
+- Arka Plan Desen Algoritması     : {pattern_name}
+- Seçilen / Türetilen Renk Paleti : {pal_name}
+- Sahne Koleksiyonu Adı           : {res.get('collection_name')}
+- OBS JSON Dosya Yolu             : {res.get('filepath')}
+- Açılış Ekranı Bannerı           : {start_p}
+- Webcam Çerçevesi                : {cam_p}
+- Sohbet Çerçevesi                : {chat_p}
+- AI Ses Filtresi                 : Mikrofona RNNoise Yapay Zeka Gürültü Engelleme bağlandı!
+- ReShade Koruması                : capture_overlays = false (FiveM / GTA V çökmez)
 
 OBS Studio'yu açıp üst menüden 'Sahne Koleksiyonu' -> '{res.get('collection_name')}' seçerek yayına başlayabilirsiniz!
+Her butona bastığınızda sistem asla kendini tekrar etmeyen yepyeni bir tasarım düzeni üretecektir!
 """
         self.txt_ai_scene_log.configure(state="normal")
         self.txt_ai_scene_log.delete("1.0", "end")
         self.txt_ai_scene_log.insert("1.0", log_txt)
         self.txt_ai_scene_log.configure(state="disabled")
 
-        self._set_status(f"🎉 '{res.get('collection_name')}' sahne paketi OBS'e eklendi!", THEME["success"])
+        self._set_status(f"🎉 '{res.get('collection_name')}' sahne paketi OBS'e eklendi! ({arch_name} | {pal_name})", THEME["success"])
 
     # ==========================================================================
     # SEKME 2: PERFORMANS MONİTÖRÜ & DONANIM (DASHBOARD)

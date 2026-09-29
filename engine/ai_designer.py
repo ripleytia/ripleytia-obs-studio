@@ -1,9 +1,320 @@
+# -*- coding: utf-8 -*-
 import os
 import json
 import uuid
 import math
+import random
+import time
+import hashlib
+import colorsys
+import re
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Tuple
 import requests
 from PIL import Image, ImageDraw, ImageFont
+
+# ------------------------------------------------------------------------------
+# 1. VERİ YAPILARI (MODELS)
+# ------------------------------------------------------------------------------
+
+@dataclass
+class ColorPalette:
+    name: str
+    bg_start: Tuple[int, int, int, int]
+    bg_end: Tuple[int, int, int, int]
+    neon_primary: Tuple[int, int, int, int]
+    neon_secondary: Tuple[int, int, int, int]
+    neon_accent: Tuple[int, int, int, int]
+    text_main: Tuple[int, int, int, int]
+    text_sub: Tuple[int, int, int, int]
+    border_color: Tuple[int, int, int, int]
+
+@dataclass
+class LayoutSpec:
+    archetype: str          # "centered_hero", "split_asymmetric", "cyber_hud", "minimalist_floating", "slant_esports"
+    alignment: str          # "left", "center", "right"
+    border_style: str       # "tech_brackets", "neon_glow", "double_chamfer", "minimal_rounded"
+    pattern_type: str       # "hex_mesh", "scanlines", "diagonal_stripes", "dot_matrix", "cyber_grid", "none"
+    badge_position: str     # "top_left", "bottom_center", "floating_right"
+    decor_density: float    # 0.2 - 0.9
+    seed: int = 0
+
+    def compute_signature(self) -> str:
+        """Tasarımın yapısal parmak izini hesaplar."""
+        raw = f"{self.archetype}|{self.alignment}|{self.border_style}|{self.pattern_type}|{self.badge_position}"
+        return hashlib.md5(raw.encode("utf-8")).hexdigest()
+
+def hex_to_rgba(hex_code: str, alpha: int = 255) -> Tuple[int, int, int, int]:
+    """Hex kodunu (örn: #bc13fe) RGBA tuple formatına dönüştürür."""
+    hex_code = hex_code.lstrip("#")
+    if len(hex_code) == 3:
+        hex_code = "".join([c * 2 for c in hex_code])
+    if len(hex_code) >= 6:
+        r = int(hex_code[0:2], 16)
+        g = int(hex_code[2:4], 16)
+        b = int(hex_code[4:6], 16)
+        return (r, g, b, alpha)
+    return (138, 43, 226, alpha)
+
+# ------------------------------------------------------------------------------
+# 2. AI & NLP DESTEKLİ RENK ENTEGRATÖRÜ (COLOR HARMONIZER)
+# ------------------------------------------------------------------------------
+
+class AIColorHarmonizer:
+    """
+    Doğal dildeki renk taleplerini (örn: 'siberpunk moru ve neon yeşil')
+    yayıncı overlay'leri için yüksek kontrastlı 5'li renk paletine dönüştürür.
+    """
+    PRESET_PALETTES = {
+        "Cyber Gothic Purple": ColorPalette(
+            name="Cyber Gothic Purple",
+            bg_start=(15, 10, 26, 255),
+            bg_end=(35, 12, 60, 255),
+            neon_primary=(138, 43, 226, 255),
+            neon_secondary=(199, 125, 255, 255),
+            neon_accent=(0, 245, 212, 255),
+            text_main=(245, 235, 255, 255),
+            text_sub=(180, 160, 210, 255),
+            border_color=(160, 60, 255, 255)
+        ),
+        "Neon Cyberpunk (Mavi/Pembe)": ColorPalette(
+            name="Neon Cyberpunk",
+            bg_start=(10, 14, 25, 255),
+            bg_end=(20, 30, 50, 255),
+            neon_primary=(0, 245, 212, 255),
+            neon_secondary=(255, 0, 128, 255),
+            neon_accent=(255, 222, 89, 255),
+            text_main=(240, 250, 255, 255),
+            text_sub=(150, 200, 230, 255),
+            border_color=(0, 245, 212, 255)
+        ),
+        "Blood Red (Kırmızı/Siyah)": ColorPalette(
+            name="Blood Red",
+            bg_start=(18, 8, 10, 255),
+            bg_end=(45, 12, 16, 255),
+            neon_primary=(230, 57, 70, 255),
+            neon_secondary=(255, 107, 107, 255),
+            neon_accent=(244, 162, 97, 255),
+            text_main=(255, 240, 240, 255),
+            text_sub=(210, 160, 160, 255),
+            border_color=(230, 57, 70, 255)
+        ),
+        "Emerald Green (Yeşil/Siyah)": ColorPalette(
+            name="Emerald Green",
+            bg_start=(8, 20, 15, 255),
+            bg_end=(15, 45, 30, 255),
+            neon_primary=(16, 185, 129, 255),
+            neon_secondary=(52, 211, 153, 255),
+            neon_accent=(110, 231, 183, 255),
+            text_main=(240, 255, 245, 255),
+            text_sub=(150, 210, 180, 255),
+            border_color=(16, 185, 129, 255)
+        ),
+        "Retro Synthwave": ColorPalette(
+            name="Retro Synthwave",
+            bg_start=(20, 8, 35, 255),
+            bg_end=(45, 15, 65, 255),
+            neon_primary=(255, 0, 128, 255),
+            neon_secondary=(121, 40, 202, 255),
+            neon_accent=(0, 245, 212, 255),
+            text_main=(255, 245, 255, 255),
+            text_sub=(215, 180, 230, 255),
+            border_color=(255, 0, 128, 255)
+        ),
+        "Minimalist & Clean": ColorPalette(
+            name="Minimalist & Clean",
+            bg_start=(12, 12, 14, 255),
+            bg_end=(22, 22, 26, 255),
+            neon_primary=(255, 255, 255, 255),
+            neon_secondary=(170, 170, 180, 255),
+            neon_accent=(56, 239, 125, 255),
+            text_main=(255, 255, 255, 255),
+            text_sub=(160, 160, 175, 255),
+            border_color=(200, 200, 210, 255)
+        )
+    }
+
+    def __init__(self, api_key: str = ""):
+        self.api_key = api_key
+
+    def resolve_palette(self, color_text: str = "", preset_name: str = "Tamamen Rastgele") -> ColorPalette:
+        color_text = (color_text or "").strip()
+
+        # 1. Kullanıcı serbest metin girdiyse ve API key varsa Gemini AI'ya sor
+        if self.api_key and color_text:
+            ai_pal = self._query_gemini_palette(color_text, preset_name)
+            if ai_pal:
+                return ai_pal
+
+        # 2. Heuristic Doğal Dil Kelime Taraması (Yerel Akıllı Ayrıştırıcı)
+        if color_text:
+            text_lower = color_text.lower()
+            if "mor" in text_lower or "purple" in text_lower:
+                return self.PRESET_PALETTES["Cyber Gothic Purple"]
+            elif "siber" in text_lower or "cyber" in text_lower or "neon" in text_lower or "pembe" in text_lower:
+                return self.PRESET_PALETTES["Neon Cyberpunk (Mavi/Pembe)"]
+            elif "kırmızı" in text_lower or "red" in text_lower or "kan" in text_lower:
+                return self.PRESET_PALETTES["Blood Red (Kırmızı/Siyah)"]
+            elif "yeşil" in text_lower or "green" in text_lower or "mint" in text_lower:
+                return self.PRESET_PALETTES["Emerald Green (Yeşil/Siyah)"]
+            elif "retro" in text_lower or "synth" in text_lower:
+                return self.PRESET_PALETTES["Retro Synthwave"]
+            elif "minimal" in text_lower or "sade" in text_lower or "beyaz" in text_lower:
+                return self.PRESET_PALETTES["Minimalist & Clean"]
+
+        # 3. Hazır Preset Seçimi
+        for k, v in self.PRESET_PALETTES.items():
+            if k.lower() in preset_name.lower():
+                return v
+
+        # 4. Tamamen Rastgele HSL Tabanlı Harmonik Palet Üretimi
+        return self._generate_procedural_palette()
+
+    def _generate_procedural_palette(self) -> ColorPalette:
+        base_hue = random.random()
+        comp_hue = (base_hue + 0.5) % 1.0
+        acc_hue = (base_hue + 0.25) % 1.0
+
+        def to_rgb(h, l, s):
+            return tuple([int(c * 255) for c in colorsys.hls_to_rgb(h, l, s)] + [255])
+
+        bg_s = to_rgb(base_hue, 0.05, 0.40)
+        bg_e = to_rgb(base_hue, 0.12, 0.50)
+        p_rgb = to_rgb(base_hue, 0.55, 0.95)
+        s_rgb = to_rgb(comp_hue, 0.65, 0.90)
+        a_rgb = to_rgb(acc_hue, 0.70, 1.0)
+
+        return ColorPalette(
+            name=f"Procedural #{int(base_hue*360)}",
+            bg_start=bg_s,
+            bg_end=bg_e,
+            neon_primary=p_rgb,
+            neon_secondary=s_rgb,
+            neon_accent=a_rgb,
+            text_main=(250, 250, 255, 255),
+            text_sub=(190, 185, 210, 255),
+            border_color=p_rgb
+        )
+
+    def _query_gemini_palette(self, color_text: str, preset: str) -> Optional[ColorPalette]:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+        prompt = f"""
+        Sen profesyonel bir espor yayın grafik tasarımcısısın.
+        Kullanıcının talep ettiği renk tanımı: '{color_text}' (Preset: '{preset}').
+        OBS yayın overlay seti için 5 renkli uyumlu palet üret.
+        YALNIZCA aşağıdaki JSON formatını döndür:
+        {{
+            "name": "Palet Adı",
+            "bg_start": "#0a0a14",
+            "bg_end": "#1e1028",
+            "neon_primary": "#8a2be2",
+            "neon_secondary": "#c77dff",
+            "neon_accent": "#00f5d4"
+        }}
+        """
+        try:
+            r = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=5)
+            if r.status_code == 200:
+                raw = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                match = re.search(r"\{.*\}", raw, re.DOTALL)
+                if match:
+                    d = json.loads(match.group(0))
+                    return ColorPalette(
+                        name=d.get("name", "Gemini AI Palette"),
+                        bg_start=hex_to_rgba(d.get("bg_start", "#0a0a14")),
+                        bg_end=hex_to_rgba(d.get("bg_end", "#1e1028")),
+                        neon_primary=hex_to_rgba(d.get("neon_primary", "#8a2be2")),
+                        neon_secondary=hex_to_rgba(d.get("neon_secondary", "#c77dff")),
+                        neon_accent=hex_to_rgba(d.get("neon_accent", "#00f5d4")),
+                        text_main=(250, 250, 255, 255),
+                        text_sub=(190, 185, 210, 255),
+                        border_color=hex_to_rgba(d.get("neon_primary", "#8a2be2"))
+                    )
+        except Exception:
+            pass
+        return None
+
+THEME_PALETTES = AIColorHarmonizer.PRESET_PALETTES
+
+# ------------------------------------------------------------------------------
+# 3. EŞSİZLİK & RASTGELELİK MOTORU (ANTI-REPETITION ENGINE)
+# ------------------------------------------------------------------------------
+
+class AntiRepetitionEngine:
+    """
+    Üretilen tasarımların şablon parmak izlerini hafızada tutar
+    ve her butona basıldığında daha önce üretilmemiş, özgün bir kompozisyon türetir.
+    """
+    ARCHETYPES = [
+        "centered_hero",       # Ortalanmış büyük kanal logosu ve simetrik çizgiler
+        "split_asymmetric",    # Sol taraf panel, sağ taraf dinamik soyut geometri
+        "cyber_hud",           # Siberpunk bilimkurgu HUD arayüzü, köşeli parantezler
+        "minimalist_floating", # Ultra temiz, zarif ince çizgiler
+        "slant_esports"        # Agresif açılı diyagonal çizgiler, espor stili
+    ]
+
+    BORDER_STYLES = ["tech_brackets", "neon_glow", "double_chamfer", "minimal_rounded"]
+    PATTERNS = ["hex_mesh", "scanlines", "diagonal_stripes", "dot_matrix", "cyber_grid", "none"]
+    ALIGNMENTS = ["center", "left", "center"]
+    BADGE_POSITIONS = ["bottom_center", "top_left", "floating_right"]
+
+    def __init__(self, cache_limit: int = 40):
+        self.cache_limit = cache_limit
+        self.history: List[str] = []
+
+    def derive_unique_layout(self, preset_name: str = "Tamamen Rastgele") -> LayoutSpec:
+        for _ in range(30):
+            seed = int(time.time() * 1000) ^ random.randint(1000, 999999)
+            rng = random.Random(seed)
+
+            if "Minimalist" in preset_name:
+                arch = "minimalist_floating"
+                b_style = "minimal_rounded"
+                pattern = "none"
+                density = 0.2
+            elif "Siberpunk" in preset_name or "Cyber" in preset_name:
+                arch = rng.choice(["cyber_hud", "slant_esports"])
+                b_style = rng.choice(["tech_brackets", "double_chamfer"])
+                pattern = rng.choice(["hex_mesh", "scanlines", "cyber_grid"])
+                density = 0.8
+            elif "Blood" in preset_name or "Gothic" in preset_name:
+                arch = rng.choice(["split_asymmetric", "centered_hero"])
+                b_style = rng.choice(["neon_glow", "double_chamfer"])
+                pattern = rng.choice(["diagonal_stripes", "scanlines"])
+                density = 0.6
+            else: # Tamamen Rastgele
+                arch = rng.choice(self.ARCHETYPES)
+                b_style = rng.choice(self.BORDER_STYLES)
+                pattern = rng.choice(self.PATTERNS)
+                density = rng.uniform(0.3, 0.85)
+
+            layout = LayoutSpec(
+                archetype=arch,
+                alignment=rng.choice(self.ALIGNMENTS),
+                border_style=b_style,
+                pattern_type=pattern,
+                badge_position=rng.choice(self.BADGE_POSITIONS),
+                decor_density=density,
+                seed=seed
+            )
+
+            sig = layout.compute_signature()
+            if sig not in self.history:
+                self._record(sig)
+                return layout
+
+        if self.history:
+            self.history.pop(0)
+        return layout
+
+    def _record(self, sig: str):
+        self.history.append(sig)
+        if len(self.history) > self.cache_limit:
+            self.history.pop(0)
+
+# Global Tekil Örnekler
+_harmonizer_instance = AIColorHarmonizer()
+_repetition_instance = AntiRepetitionEngine()
 
 def get_appdata_obs_assets_dir():
     appdata = os.environ.get("APPDATA", "")
@@ -11,53 +322,7 @@ def get_appdata_obs_assets_dir():
     os.makedirs(obs_assets, exist_ok=True)
     return obs_assets
 
-THEME_PALETTES = {
-    "cyber_purple": {
-        "bg_start": (15, 10, 26, 255),
-        "bg_end": (35, 12, 60, 255),
-        "neon_primary": (138, 43, 226, 255),    # BlueViolet
-        "neon_secondary": (199, 125, 255, 255), # Light Violet
-        "neon_accent": (0, 245, 212, 255),      # Cyan
-        "text_main": (245, 235, 255, 255),
-        "text_sub": (180, 160, 210, 255),
-        "border_color": (160, 60, 255, 255)
-    },
-    "neon_cyberpunk": {
-        "bg_start": (10, 14, 25, 255),
-        "bg_end": (20, 30, 50, 255),
-        "neon_primary": (0, 245, 212, 255),     # Cyan
-        "neon_secondary": (255, 0, 128, 255),   # Hot Pink
-        "neon_accent": (255, 222, 89, 255),     # Yellow
-        "text_main": (240, 250, 255, 255),
-        "text_sub": (150, 200, 230, 255),
-        "border_color": (0, 245, 212, 255)
-    },
-    "blood_red": {
-        "bg_start": (18, 8, 10, 255),
-        "bg_end": (45, 12, 16, 255),
-        "neon_primary": (230, 57, 70, 255),     # Crimson Red
-        "neon_secondary": (255, 107, 107, 255),
-        "neon_accent": (244, 162, 97, 255),     # Orange
-        "text_main": (255, 240, 240, 255),
-        "text_sub": (210, 160, 160, 255),
-        "border_color": (230, 57, 70, 255)
-    },
-    "emerald_green": {
-        "bg_start": (8, 20, 15, 255),
-        "bg_end": (15, 45, 30, 255),
-        "neon_primary": (16, 185, 129, 255),    # Emerald
-        "neon_secondary": (52, 211, 153, 255),
-        "neon_accent": (110, 231, 183, 255),
-        "text_main": (240, 255, 245, 255),
-        "text_sub": (150, 210, 180, 255),
-        "border_color": (16, 185, 129, 255)
-    }
-}
-
 def get_system_font(size=36, bold=False):
-    """
-    Windows yerleşik yazı tiplerini (Segoe UI, Arial vb.) güvenli şekilde yükler.
-    """
     font_names = [
         "segoeuib.ttf" if bold else "segoeui.ttf",
         "arialbd.ttf" if bold else "arial.ttf",
@@ -73,49 +338,122 @@ def get_system_font(size=36, bold=False):
     return ImageFont.load_default()
 
 # ------------------------------------------------------------------------------
-# 1. KİŞİSELLEŞTİRİLMİŞ AÇILIŞ VE MOLA BANNER ÜRETİCİ (1920x1080)
+# 4. DİNAMİK AÇILIŞ VE MOLA BANNER ÜRETİCİSİ (PROSEDÜREL 1920x1080)
 # ------------------------------------------------------------------------------
-def generate_channel_banner(channel_name="Ripleytia", theme_name="cyber_purple", mode="starting", custom_title=None):
+def generate_channel_banner(channel_name="Ripleytia", palette=None, layout=None, mode="starting", custom_title=None):
     """
-    Kullanıcının kanal adına özel, 1920x1080 yüksek çözünürlüklü estetik açılış/mola ekranı üretir.
-    mode: 'starting' (Yayın Başlıyor), 'brb' (Kısa Mola), 'ending' (Yayın Bitti)
+    LayoutSpec ve ColorPalette'e göre kendini asla tekrar etmeyen dinamik 1920x1080 banner üretir.
     """
-    palette = THEME_PALETTES.get(theme_name, THEME_PALETTES["cyber_purple"])
-    w, h = 1920, 1080
-    img = Image.new("RGBA", (w, h), palette["bg_start"])
-    draw = ImageDraw.Draw(img)
+    if palette is None:
+        palette = _harmonizer_instance.resolve_palette()
+    if layout is None:
+        layout = _repetition_instance.derive_unique_layout()
 
-    # Arka Plan Gradient & Geometrik Çizgiler
+    w, h = 1920, 1080
+    img = Image.new("RGBA", (w, h), palette.bg_start)
+    draw = ImageDraw.Draw(img)
+    rng = random.Random(layout.seed)
+
+    # 1. Dinamik Dikey Gradyan
     for y in range(h):
         blend = y / h
-        r = int(palette["bg_start"][0] * (1 - blend) + palette["bg_end"][0] * blend)
-        g = int(palette["bg_start"][1] * (1 - blend) + palette["bg_end"][1] * blend)
-        b = int(palette["bg_start"][2] * (1 - blend) + palette["bg_end"][2] * blend)
+        r = int(palette.bg_start[0] * (1 - blend) + palette.bg_end[0] * blend)
+        g = int(palette.bg_start[1] * (1 - blend) + palette.bg_end[1] * blend)
+        b = int(palette.bg_start[2] * (1 - blend) + palette.bg_end[2] * blend)
         draw.line([(0, y), (w, y)], fill=(r, g, b, 255))
 
-    # Geometrik Izgara (Gamer Grid) Çizgileri
-    grid_color = (palette["neon_primary"][0], palette["neon_primary"][1], palette["neon_primary"][2], 25)
-    for x in range(0, w, 80):
-        draw.line([(x, 0), (x, h)], fill=grid_color, width=1)
-    for y in range(0, h, 80):
-        draw.line([(0, y), (w, y)], fill=grid_color, width=1)
+    # 2. Prosedürel Arka Plan Deseni (Pattern)
+    pat = layout.pattern_type
+    p_alpha = int(40 * layout.decor_density)
+    pat_col = (palette.neon_primary[0], palette.neon_primary[1], palette.neon_primary[2], p_alpha)
 
-    # Dış Neon Çerçeve (Çift katmanlı parıltı hissi)
-    draw.rectangle([(40, 40), (w - 40, h - 40)], outline=palette["border_color"], width=3)
-    draw.rectangle([(48, 48), (w - 48, h - 48)], outline=(palette["neon_secondary"][0], palette["neon_secondary"][1], palette["neon_secondary"][2], 120), width=1)
+    if pat == "diagonal_stripes":
+        step = 50
+        for x in range(-w, w * 2, step):
+            draw.line([(x, 0), (x + h, h)], fill=pat_col, width=1)
+    elif pat == "hex_mesh":
+        step = 70
+        for y in range(0, h + step, step):
+            for x in range(0, w + step, step):
+                draw.regular_polygon((x, y, 16), 6, rotation=0, outline=pat_col)
+    elif pat == "cyber_grid":
+        step = 80
+        for x in range(0, w, step):
+            draw.line([(x, 0), (x, h)], fill=pat_col, width=1)
+        for y in range(0, h, step):
+            draw.line([(0, y), (w, y)], fill=pat_col, width=1)
+    elif pat == "dot_matrix":
+        step = 40
+        for y in range(0, h, step):
+            for x in range(0, w, step):
+                draw.point((x, y), fill=(palette.neon_accent[0], palette.neon_accent[1], palette.neon_accent[2], p_alpha * 2))
 
-    # Köşe Geometrik Aksanlar
-    corner_len = 60
-    for cx, cy in [(40, 40), (w - 40, 40), (40, h - 40), (w - 40, h - 40)]:
-        dx = 1 if cx == 40 else -1
-        dy = 1 if cy == 40 else -1
-        draw.line([(cx, cy), (cx + dx * corner_len, cy)], fill=palette["neon_accent"], width=5)
-        draw.line([(cx, cy), (cx, cy + dy * corner_len)], fill=palette["neon_accent"], width=5)
+    # 3. Kompozisyon Düzeni (Archetype Logic)
+    margin = 50
+    if layout.archetype == "split_asymmetric":
+        # Sol asimetrik teknolojik panel
+        split_x = int(w * 0.46)
+        poly = [(0, 0), (split_x, 0), (split_x - 140, h), (0, h)]
+        draw.polygon(poly, fill=(palette.bg_start[0], palette.bg_start[1], palette.bg_start[2], 220))
+        draw.line([(split_x, 0), (split_x - 140, h)], fill=palette.neon_primary, width=4)
+        draw.line([(split_x - 10, 0), (split_x - 150, h)], fill=palette.neon_accent, width=1)
 
-    # Tipografi: Başlık ve Kanal Adı
-    font_huge = get_system_font(size=72, bold=True)
-    font_title = get_system_font(size=38, bold=True)
-    font_sub = get_system_font(size=24, bold=False)
+        # Tipografi Konumu: Sol Hizalı
+        ch_x = 120
+        ch_y = h // 2 - 100
+        sub_x = 125
+        sub_y = ch_y + 115
+        align_center = False
+    elif layout.archetype == "cyber_hud":
+        # Siberpunk HUD Çerçevesi
+        draw.rectangle([(margin, margin), (w - margin, h - margin)], outline=(palette.neon_primary[0], palette.neon_primary[1], palette.neon_primary[2], 80), width=2)
+        # Köşe aksanları
+        k = 70
+        for px, py in [(margin, margin), (w - margin, margin), (margin, h - margin), (w - margin, h - margin)]:
+            dx = 1 if px == margin else -1
+            dy = 1 if py == margin else -1
+            draw.line([(px, py), (px + dx * k, py)], fill=palette.neon_accent, width=5)
+            draw.line([(px, py), (px, py + dy * k)], fill=palette.neon_accent, width=5)
+            draw.rectangle([(px + dx * 10 - 3, py + dy * 10 - 3), (px + dx * 10 + 3, py + dy * 10 + 3)], fill=palette.neon_secondary)
+
+        ch_x = w // 2
+        ch_y = 370
+        sub_x = w // 2
+        sub_y = 490
+        align_center = True
+    elif layout.archetype == "slant_esports":
+        # Agresif espor çizgileri
+        for i in range(3):
+            sx = 250 + i * 25
+            draw.line([(sx, 0), (sx + 200, h)], fill=(palette.neon_primary[0], palette.neon_primary[1], palette.neon_primary[2], 40 + i * 30), width=6)
+        ch_x = w // 2
+        ch_y = 360
+        sub_x = w // 2
+        sub_y = 480
+        align_center = True
+    elif layout.archetype == "minimalist_floating":
+        # Ultra temiz ince neon çizgi
+        draw.line([(w // 2 - 300, h // 2 + 35), (w // 2 + 300, h // 2 + 35)], fill=palette.neon_primary, width=2)
+        ch_x = w // 2
+        ch_y = h // 2 - 80
+        sub_x = w // 2
+        sub_y = h // 2 + 65
+        align_center = True
+    else: # centered_hero
+        # Ortalanmış kahraman daire
+        cx, cy = w // 2, h // 2 - 20
+        draw.ellipse([(cx - 320, cy - 320), (cx + 320, cy + 320)], outline=(palette.neon_primary[0], palette.neon_primary[1], palette.neon_primary[2], 70), width=2)
+        draw.ellipse([(cx - 340, cy - 340), (cx + 340, cy + 340)], outline=(palette.neon_accent[0], palette.neon_accent[1], palette.neon_accent[2], 30), width=1)
+        ch_x = w // 2
+        ch_y = 370
+        sub_x = w // 2
+        sub_y = 485
+        align_center = True
+
+    # 4. Tipografi Render
+    font_huge = get_system_font(size=76, bold=True)
+    font_title = get_system_font(size=34, bold=True)
+    font_sub = get_system_font(size=22, bold=False)
 
     if mode == "starting":
         sub_text = custom_title or "YAYIN BİRAZDAN BAŞLIYOR..."
@@ -124,51 +462,46 @@ def generate_channel_banner(channel_name="Ripleytia", theme_name="cyber_purple",
         sub_text = custom_title or "KISA BİR MOLA • HEMEN DÖNÜYORUM"
         tagline = "Kahve/İçecek Molası • Yayından Ayrılmayın!"
     else:
-        sub_text = custom_title or "YAYIN SONA ERDİ • İZLEDİĞİNİZ İÇİN TEŞEKKÜRLER!"
+        sub_text = custom_title or "YAYIN SONA ERDİ • TEŞEKKÜRLER!"
         tagline = "Takip Etmeyi ve Bildirimleri Açmayı Unutmayın!"
 
     channel_text = channel_name.upper()
 
-    # Kanal Adı Gölgesi ve Kendisi (Ortalanmış)
-    ch_box = draw.textbbox((0, 0), channel_text, font=font_huge)
-    ch_w = ch_box[2] - ch_box[0]
-    ch_x = (w - ch_w) // 2
-    ch_y = 380
+    if align_center:
+        ch_box = draw.textbbox((0, 0), channel_text, font=font_huge)
+        sub_box = draw.textbbox((0, 0), sub_text, font=font_title)
+        tag_box = draw.textbbox((0, 0), tagline, font=font_sub)
 
-    # Gölge
-    draw.text((ch_x + 4, ch_y + 4), channel_text, font=font_huge, fill=(0, 0, 0, 180))
-    # Ana Metin
-    draw.text((ch_x, ch_y), channel_text, font=font_huge, fill=palette["text_main"])
+        # Gölge + Ana Metin
+        draw.text(((w - (ch_box[2] - ch_box[0])) // 2 + 3, ch_y + 3), channel_text, font=font_huge, fill=(0, 0, 0, 200))
+        draw.text(((w - (ch_box[2] - ch_box[0])) // 2, ch_y), channel_text, font=font_huge, fill=palette.text_main)
 
-    # Alt Başlık
-    sub_box = draw.textbbox((0, 0), sub_text, font=font_title)
-    sub_w = sub_box[2] - sub_box[0]
-    sub_x = (w - sub_w) // 2
-    draw.text((sub_x, 480), sub_text, font=font_title, fill=palette["neon_secondary"])
+        # Alt Başlık
+        draw.text(((w - (sub_box[2] - sub_box[0])) // 2, sub_y), sub_text, font=font_title, fill=palette.neon_secondary)
+        draw.text(((w - (tag_box[2] - tag_box[0])) // 2, sub_y + 60), tagline, font=font_sub, fill=palette.text_sub)
+    else:
+        # Sol Hizalama (Split Modu)
+        draw.text((ch_x + 3, ch_y + 3), channel_text, font=font_huge, fill=(0, 0, 0, 200))
+        draw.text((ch_x, ch_y), channel_text, font=font_huge, fill=palette.text_main)
+        draw.text((sub_x, sub_y), sub_text, font=font_title, fill=palette.neon_secondary)
+        draw.text((sub_x, sub_y + 55), tagline, font=font_sub, fill=palette.text_sub)
 
-    # Tagline
-    tag_box = draw.textbbox((0, 0), tagline, font=font_sub)
-    tag_w = tag_box[2] - tag_box[0]
-    draw.text(((w - tag_w) // 2, 550), tagline, font=font_sub, fill=palette["text_sub"])
+    # 5. Durum Pill Rozeti
+    pill_w, pill_h = 440, 46
+    pill_x = (w - pill_w) // 2 if align_center else 125
+    pill_y = h - 230 if align_center else h - 250
+    draw.rounded_rectangle([(pill_x, pill_y), (pill_x + pill_w, pill_y + pill_h)], radius=12, fill=(10, 8, 16, 220), outline=palette.border_color, width=2)
+    # Canlı Kırmızı Işık
+    draw.ellipse([(pill_x + 18, pill_y + 15), (pill_x + 32, pill_y + 29)], fill=(239, 68, 68, 255))
+    draw.text((pill_x + 44, pill_y + 12), f"CANLI BEKLEME • [{palette.name}]", font=get_system_font(15, bold=True), fill=palette.text_main)
 
-    # Durum & Yükleme Çubuğu Kutusu (Center Box)
-    box_w, box_h = 500, 50
-    box_x = (w - box_w) // 2
-    box_y = 650
-    draw.rounded_rectangle([(box_x, box_y), (box_x + box_w, box_y + box_h)], radius=12, fill=(0, 0, 0, 160), outline=palette["border_color"], width=2)
-    
-    # Kırmızı Canlı Noktası
-    draw.ellipse([(box_x + 20, box_y + 17), (box_x + 36, box_y + 33)], fill=(239, 68, 68, 255))
-    draw.text((box_x + 48, box_y + 14), "CANLI YAYIN BEKLEME MODU", font=get_system_font(18, bold=True), fill=palette["text_main"])
+    # 6. Alt Sosyal Medya Şeridi
+    bot_y = h - 90
+    draw.line([(100, bot_y), (w - 100, bot_y)], fill=(palette.border_color[0], palette.border_color[1], palette.border_color[2], 80), width=1)
+    footer_text = f"TWITCH / KICK: @{channel_name}   •   YOUTUBE: @{channel_name}   •   DİSCORD TOPLULUĞU"
+    fb_box = draw.textbbox((0, 0), footer_text, font=get_system_font(16, False))
+    draw.text(((w - (fb_box[2] - fb_box[0])) // 2, bot_y + 20), footer_text, font=get_system_font(16, False), fill=palette.text_sub)
 
-    # Alt Bilgi Şeridi: Sosyal Medya İpuçları
-    bot_y = h - 120
-    draw.line([(100, bot_y), (w - 100, bot_y)], fill=(palette["border_color"][0], palette["border_color"][1], palette["border_color"][2], 100), width=1)
-    footer_text = f"TWITCH / KICK: @{channel_name}   •   YOUTUBE: @{channel_name}   •   DISCORD TOPLULUĞU"
-    fb_box = draw.textbbox((0, 0), footer_text, font=get_system_font(18, False))
-    draw.text(((w - (fb_box[2] - fb_box[0])) // 2, bot_y + 25), footer_text, font=get_system_font(18, False), fill=palette["text_sub"])
-
-    # Dosyayı kaydet
     out_dir = get_appdata_obs_assets_dir()
     clean_name = "".join(c for c in channel_name if c.isalnum() or c in ("_", "-"))
     out_file = os.path.join(out_dir, f"{clean_name}_{mode}.png")
@@ -176,40 +509,53 @@ def generate_channel_banner(channel_name="Ripleytia", theme_name="cyber_purple",
     return out_file
 
 # ------------------------------------------------------------------------------
-# 2. ŞEFFAF WEBCAM OVERLAY ÇERÇEVESİ (1920x1080 Transparent PNG)
+# 5. DİNAMİK ŞEFFAF WEBCAM ÇERÇEVESİ (PROSEDÜREL 1920x1080 PNG)
 # ------------------------------------------------------------------------------
-def generate_webcam_overlay(channel_name="Ripleytia", theme_name="cyber_purple"):
-    """
-    Oyun sahnesinde kamera üzerine tam oturan 1920x1080 şeffaf webcam çerçevesi üretir.
-    Webcam varsayılan olarak sağ üstte 480x270 (16:9) oranında konumlandırılır.
-    """
-    palette = THEME_PALETTES.get(theme_name, THEME_PALETTES["cyber_purple"])
+def generate_webcam_overlay(channel_name="Ripleytia", palette=None, layout=None):
+    if palette is None:
+        palette = _harmonizer_instance.resolve_palette()
+    if layout is None:
+        layout = _repetition_instance.derive_unique_layout()
+
     w, h = 1920, 1080
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # Webcam Konumu (Sağ Üst: X=1380, Y=60, W=480, H=270)
     cam_x, cam_y = 1380, 60
     cam_w, cam_h = 480, 270
 
-    # Dış Çerçeve
-    draw.rectangle([(cam_x, cam_y), (cam_x + cam_w, cam_y + cam_h)], outline=palette["neon_primary"], width=3)
-    draw.rectangle([(cam_x - 3, cam_y - 3), (cam_x + cam_w + 3, cam_y + cam_h + 3)], outline=(palette["neon_secondary"][0], palette["neon_secondary"][1], palette["neon_secondary"][2], 100), width=1)
+    if layout.border_style == "tech_brackets":
+        # Siberpunk Köşeli Braketler
+        draw.rectangle([(cam_x, cam_y), (cam_x + cam_w, cam_y + cam_h)], outline=(palette.neon_primary[0], palette.neon_primary[1], palette.neon_primary[2], 70), width=1)
+        k = 36
+        for px, py in [(cam_x, cam_y), (cam_x + cam_w, cam_y), (cam_x, cam_y + cam_h), (cam_x + cam_w, cam_y + cam_h)]:
+            dx = 1 if px == cam_x else -1
+            dy = 1 if py == cam_y else -1
+            draw.line([(px, py), (px + dx * k, py)], fill=palette.neon_accent, width=4)
+            draw.line([(px, py), (px, py + dy * k)], fill=palette.neon_accent, width=4)
+    elif layout.border_style == "double_chamfer":
+        # 45 Derece Pah Kırılmış Köşeler
+        c = 18
+        points = [
+            (cam_x + c, cam_y), (cam_x + cam_w - c, cam_y),
+            (cam_x + cam_w, cam_y + c), (cam_x + cam_w, cam_y + cam_h - c),
+            (cam_x + cam_w - c, cam_y + cam_h), (cam_x + c, cam_y + cam_h),
+            (cam_x, cam_y + cam_h - c), (cam_x, cam_y + c)
+        ]
+        draw.polygon(points, outline=palette.neon_primary, width=3)
+    elif layout.border_style == "minimal_rounded":
+        # Yuvarlatılmış Zarif Çerçeve
+        draw.rounded_rectangle([(cam_x, cam_y), (cam_x + cam_w, cam_y + cam_h)], radius=14, outline=palette.neon_primary, width=3)
+    else: # neon_glow
+        # Çift Katmanlı Parlayan Neon
+        draw.rectangle([(cam_x - 3, cam_y - 3), (cam_x + cam_w + 3, cam_y + cam_h + 3)], outline=(palette.neon_secondary[0], palette.neon_secondary[1], palette.neon_secondary[2], 90), width=6)
+        draw.rectangle([(cam_x, cam_y), (cam_x + cam_w, cam_y + cam_h)], outline=palette.neon_primary, width=3)
 
-    # Köşe Aksanları
-    c_len = 25
-    for px, py in [(cam_x, cam_y), (cam_x + cam_w, cam_y), (cam_x, cam_y + cam_h), (cam_x + cam_w, cam_y + cam_h)]:
-        dx = 1 if px == cam_x else -1
-        dy = 1 if py == cam_y else -1
-        draw.line([(px, py), (px + dx * c_len, py)], fill=palette["neon_accent"], width=4)
-        draw.line([(px, py), (px, py + dy * c_len)], fill=palette["neon_accent"], width=4)
-
-    # Alt İsim Şeridi
+    # İsim Plakası
     badge_h = 32
-    draw.rectangle([(cam_x, cam_y + cam_h), (cam_x + cam_w, cam_y + cam_h + badge_h)], fill=(12, 10, 20, 230), outline=palette["neon_primary"], width=2)
-    font_badge = get_system_font(16, bold=True)
-    draw.text((cam_x + 16, cam_y + cam_h + 6), f"🔴 {channel_name.upper()}", font=font_badge, fill=palette["text_main"])
-    draw.text((cam_x + cam_w - 95, cam_y + cam_h + 8), "LIVE HD", font=get_system_font(13, bold=True), fill=palette["neon_accent"])
+    draw.rectangle([(cam_x, cam_y + cam_h), (cam_x + cam_w, cam_y + cam_h + badge_h)], fill=(12, 10, 20, 230), outline=palette.neon_primary, width=2)
+    draw.text((cam_x + 16, cam_y + cam_h + 6), f"🔴 {channel_name.upper()}", font=get_system_font(15, bold=True), fill=palette.text_main)
+    draw.text((cam_x + cam_w - 90, cam_y + cam_h + 7), "LIVE HD", font=get_system_font(13, bold=True), fill=palette.neon_accent)
 
     out_dir = get_appdata_obs_assets_dir()
     clean_name = "".join(c for c in channel_name if c.isalnum() or c in ("_", "-"))
@@ -218,14 +564,14 @@ def generate_webcam_overlay(channel_name="Ripleytia", theme_name="cyber_purple")
     return out_file
 
 # ------------------------------------------------------------------------------
-# 3. ŞEFFAF SOHBET (CHAT) OVERLAY ALANI (1920x1080 Transparent PNG)
+# 6. DİNAMİK ŞEFFAF CHAT OVERLAY ÇERÇEVESİ (PROSEDÜREL 1920x1080 PNG)
 # ------------------------------------------------------------------------------
-def generate_chat_overlay(channel_name="Ripleytia", theme_name="cyber_purple"):
-    """
-    Sohbet sahnesi veya oyun sahnesi için şık yarı saydam cam efektli chatbox üretir.
-    Sol Altta X=60, Y=350, W=400, H=660
-    """
-    palette = THEME_PALETTES.get(theme_name, THEME_PALETTES["cyber_purple"])
+def generate_chat_overlay(channel_name="Ripleytia", palette=None, layout=None):
+    if palette is None:
+        palette = _harmonizer_instance.resolve_palette()
+    if layout is None:
+        layout = _repetition_instance.derive_unique_layout()
+
     w, h = 1920, 1080
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -233,13 +579,11 @@ def generate_chat_overlay(channel_name="Ripleytia", theme_name="cyber_purple"):
     cx, cy = 60, 350
     cw, ch = 420, 660
 
-    # Yarı saydam gövde
-    draw.rounded_rectangle([(cx, cy), (cx + cw, cy + ch)], radius=14, fill=(10, 8, 18, 140), outline=palette["neon_primary"], width=2)
-
-    # Başlık Çubuğu
-    draw.rounded_rectangle([(cx, cy), (cx + cw, cy + 42)], radius=12, fill=(25, 15, 45, 230), outline=palette["border_color"], width=2)
-    font_h = get_system_font(16, bold=True)
-    draw.text((cx + 16, cy + 10), f"💬 CANLI SOHBET • @{channel_name}", font=font_h, fill=palette["text_main"])
+    # Cam Efektli Yarı Saydam Gövde
+    draw.rounded_rectangle([(cx, cy), (cx + cw, cy + ch)], radius=14, fill=(10, 8, 18, 140), outline=palette.neon_primary, width=2)
+    # Başlık Şeridi
+    draw.rounded_rectangle([(cx, cy), (cx + cw, cy + 42)], radius=12, fill=(palette.bg_start[0], palette.bg_start[1], palette.bg_start[2], 230), outline=palette.border_color, width=2)
+    draw.text((cx + 16, cy + 10), f"💬 CANLI SOHBET • @{channel_name}", font=get_system_font(15, bold=True), fill=palette.text_main)
 
     out_dir = get_appdata_obs_assets_dir()
     clean_name = "".join(c for c in channel_name if c.isalnum() or c in ("_", "-"))
@@ -248,13 +592,14 @@ def generate_chat_overlay(channel_name="Ripleytia", theme_name="cyber_purple"):
     return out_file
 
 # ------------------------------------------------------------------------------
-# 4. ÜST HEDEF & ETKİNLİK ŞERİDİ (EVENT TICKER)
+# 7. DİNAMİK ETKİNLİK & HEDEF ŞERİDİ (EVENT TICKER)
 # ------------------------------------------------------------------------------
-def generate_event_ticker(channel_name="Ripleytia", theme_name="cyber_purple"):
-    """
-    Ekranın en üstüne yerleşen şeffaf etkinlik şeridi: Son Takipçi, Son Abone, Hedef Barı
-    """
-    palette = THEME_PALETTES.get(theme_name, THEME_PALETTES["cyber_purple"])
+def generate_event_ticker(channel_name="Ripleytia", palette=None, layout=None):
+    if palette is None:
+        palette = _harmonizer_instance.resolve_palette()
+    if layout is None:
+        layout = _repetition_instance.derive_unique_layout()
+
     w, h = 1920, 1080
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -262,21 +607,18 @@ def generate_event_ticker(channel_name="Ripleytia", theme_name="cyber_purple"):
     tx, ty = 200, 20
     tw, th = 1520, 48
 
-    draw.rounded_rectangle([(tx, ty), (tx + tw, ty + th)], radius=10, fill=(12, 10, 22, 210), outline=palette["border_color"], width=2)
+    draw.rounded_rectangle([(tx, ty), (tx + tw, ty + th)], radius=10, fill=(12, 10, 22, 215), outline=palette.border_color, width=2)
 
-    font_t = get_system_font(15, bold=True)
-    font_v = get_system_font(15, bold=False)
+    font_t = get_system_font(14, bold=True)
+    font_v = get_system_font(14, bold=False)
 
-    # Bölüm 1: Takipçi
-    draw.text((tx + 30, ty + 14), "⭐ SON TAKİPÇİ:", font=font_t, fill=palette["neon_secondary"])
-    draw.text((tx + 180, ty + 14), "Topluluk Üyesi", font=font_v, fill=palette["text_main"])
+    draw.text((tx + 30, ty + 15), "⭐ SON TAKİPÇİ:", font=font_t, fill=palette.neon_secondary)
+    draw.text((tx + 180, ty + 15), "Topluluk Üyesi", font=font_v, fill=palette.text_main)
 
-    # Bölüm 2: Abone
-    draw.text((tx + 540, ty + 14), "💎 SON ABONE:", font=font_t, fill=palette["neon_accent"])
-    draw.text((tx + 680, ty + 14), "Vip Destekçi", font=font_v, fill=palette["text_main"])
+    draw.text((tx + 540, ty + 15), "💎 SON ABONE:", font=font_t, fill=palette.neon_accent)
+    draw.text((tx + 680, ty + 15), "VIP Destekçi", font=font_v, fill=palette.text_main)
 
-    # Bölüm 3: Hedef
-    draw.text((tx + 1040, ty + 14), "🎯 TAKİPÇİ HEDEFİ: 84 / 100", font=font_t, fill=palette["text_main"])
+    draw.text((tx + 1040, ty + 15), "🎯 TAKİPÇİ HEDEFİ: 85 / 100", font=font_t, fill=palette.text_main)
 
     out_dir = get_appdata_obs_assets_dir()
     clean_name = "".join(c for c in channel_name if c.isalnum() or c in ("_", "-"))
@@ -285,15 +627,14 @@ def generate_event_ticker(channel_name="Ripleytia", theme_name="cyber_purple"):
     return out_file
 
 # ------------------------------------------------------------------------------
-# 5. TAM AKILLI OBS SAHNE KOLEKSİYONU ENTEGRATÖRÜ
+# 8. TAM AKILLI OBS SAHNE KOLEKSİYONU ENTEGRATÖRÜ (v1.2.0)
 # ------------------------------------------------------------------------------
-def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple", collection_name=None):
-    r"""
-    1. Kanal adına özel açılış, mola ve kapanış banner'larını oluşturur.
-    2. Şeffaf webcam çerçevesi ve chat overlay'ini üretir.
-    3. OBS Mikrofonuna AI Gürültü Engelleme (RNNoise) filtresini bağlar.
-    4. ReShade kilitlenmesini engelleyen Oyun Yakalama (`capture_overlays=false`) kaynağını ekler.
-    5. Koleksiyonu doğrudan %APPDATA%\obs-studio\basic\scenes\<name>.json dosyasına yazar.
+def build_ai_scene_collection(channel_name="Ripleytia", theme_name="Cyber Gothic Purple", collection_name=None, custom_color_query="", api_key=""):
+    """
+    1. AI Color Harmonizer ile renk paletini çözer.
+    2. AntiRepetitionEngine ile geçmişte kullanılmamış eşsiz bir Layout türetir.
+    3. Tüm grafikleri prosedürel olarak render edip kaydeder.
+    4. 5 sahneli eksiksiz OBS Studio koleksiyonu JSON'ını oluşturup APPDATA'ya bağlar.
     """
     appdata = os.environ.get("APPDATA", "")
     scenes_dir = os.path.join(appdata, "obs-studio", "basic", "scenes")
@@ -302,13 +643,20 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
     c_name = collection_name or f"Ripleytia AI - {channel_name}"
     filepath = os.path.join(scenes_dir, f"{c_name}.json")
 
-    # Grafikleri oluştur
-    start_banner = generate_channel_banner(channel_name, theme_name, mode="starting")
-    brb_banner = generate_channel_banner(channel_name, theme_name, mode="brb")
-    end_banner = generate_channel_banner(channel_name, theme_name, mode="ending")
-    webcam_overlay = generate_webcam_overlay(channel_name, theme_name)
-    chat_overlay = generate_chat_overlay(channel_name, theme_name)
-    ticker_overlay = generate_event_ticker(channel_name, theme_name)
+    # 1. Renk Çözümleme
+    harmonizer = AIColorHarmonizer(api_key=api_key)
+    palette = harmonizer.resolve_palette(color_text=custom_color_query, preset_name=theme_name)
+
+    # 2. Eşsiz Şablon Türetme (Anti-Repetition)
+    layout = _repetition_instance.derive_unique_layout(preset_name=theme_name)
+
+    # 3. Grafikleri Prosedürel Üret
+    start_banner = generate_channel_banner(channel_name, palette=palette, layout=layout, mode="starting")
+    brb_banner = generate_channel_banner(channel_name, palette=palette, layout=layout, mode="brb")
+    end_banner = generate_channel_banner(channel_name, palette=palette, layout=layout, mode="ending")
+    webcam_overlay = generate_webcam_overlay(channel_name, palette=palette, layout=layout)
+    chat_overlay = generate_chat_overlay(channel_name, palette=palette, layout=layout)
+    ticker_overlay = generate_event_ticker(channel_name, palette=palette, layout=layout)
 
     # UUID'ler
     game_scene_uuid = str(uuid.uuid4())
@@ -349,14 +697,13 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
             "volume": 1.0,
             "muted": False,
             "enabled": True,
-            # AI RNNOISE GÜRÜLTÜ ENGELLEME FİLTRESİ
             "filters": [
                 {
                     "name": "🤖 AI RNNoise Gürültü Engelleme",
                     "id": "noise_suppress_filter",
                     "versioned_id": "noise_suppress_filter",
                     "settings": {
-                        "method": 1  # 1 = RNNoise (Yüksek Kalite, Yapay Zeka tabanlı)
+                        "method": 1
                     },
                     "enabled": True
                 }
@@ -372,7 +719,6 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
             {"name": "👋 5 - Yayın Bitti"}
         ],
         "sources": [
-            # ---------------- 1. OYUN SAHNESİ ----------------
             {
                 "name": "🎮 1 - Oyun & FiveM",
                 "uuid": game_scene_uuid,
@@ -387,7 +733,6 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
                     ]
                 }
             },
-            # ---------------- 2. SOHBET SAHNESİ ----------------
             {
                 "name": "💬 2 - Sohbet / Chatting",
                 "uuid": chat_scene_uuid,
@@ -402,7 +747,6 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
                     ]
                 }
             },
-            # ---------------- 3. YAYIN BAŞLIYOR SAHNESİ ----------------
             {
                 "name": "⏳ 3 - Yayın Başlıyor",
                 "uuid": start_scene_uuid,
@@ -415,7 +759,6 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
                     ]
                 }
             },
-            # ---------------- 4. MOLA SAHNESİ ----------------
             {
                 "name": "☕ 4 - Kısa Mola (BRB)",
                 "uuid": brb_scene_uuid,
@@ -428,7 +771,6 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
                     ]
                 }
             },
-            # ---------------- 5. BİTTİ SAHNESİ ----------------
             {
                 "name": "👋 5 - Yayın Bitti",
                 "uuid": end_scene_uuid,
@@ -441,7 +783,6 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
                     ]
                 }
             },
-            # ---------------- KAYNAK TANIMLARI ----------------
             {
                 "name": "Oyun Yakalama (FiveM / Game)",
                 "uuid": game_cap_uuid,
@@ -449,9 +790,7 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
                 "versioned_id": "game_capture",
                 "settings": {
                     "capture_mode": "any_fullscreen",
-                    "priority": 1,
-                    "capture_overlays": False,  # ReShade Çökme Koruması
-                    "hook_rate": 1,
+                    "capture_overlays": False,
                     "anti_cheat_hook": True
                 }
             },
@@ -504,8 +843,11 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
         json.dump(collection, f, indent=4, ensure_ascii=False)
 
     return {
+        "success": True,
         "collection_name": c_name,
         "filepath": filepath,
+        "layout": layout,
+        "palette": palette,
         "assets": {
             "start_banner": start_banner,
             "brb_banner": brb_banner,
@@ -516,54 +858,37 @@ def build_ai_scene_collection(channel_name="Ripleytia", theme_name="cyber_purple
         }
     }
 
-# ------------------------------------------------------------------------------
-# 6. AI İÇERİK STRATEJİSİ & YAYIN FİKİRLERİ
-# ------------------------------------------------------------------------------
-def generate_ai_stream_strategy(channel_name="Ripleytia", game_type="FiveM / GTA V", api_key=""):
-    """
-    Kanal adına ve oyun türüne göre etkileşim artıran yayın başlıkları, anket fikirleri ve trend stratejiler üretir.
-    """
-    if api_key and api_key.strip():
-        try:
-            prompt = f"""
-            Sen profesyonel bir espor yayıncısı ve canlı yayın danışmanısın.
-            Kanal Adı: {channel_name}
-            Oyun / Kategori: {game_type}
-
-            Aşağıdaki alanları içeren Türkçe JSON döndür:
-            {{
-                "titles": ["3 adet dikkat çekici yayın başlığı"],
-                "polls": ["2 adet izleyici anket sorusu"],
-                "challenges": ["2 adet yayın içi etkileşim görevi / ceza challenge"],
-                "advice": "Yayın akıcılığı ve etkileşim için 2 cümlelik profesyonel taktik"
-            }}
-            """
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key.strip()}"
-            body = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"response_mime_type": "application/json"}
-            }
-            resp = requests.post(url, json=body, timeout=8)
-            if resp.status_code == 200:
-                txt = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-                return json.loads(txt)
-        except Exception:
-            pass
-
-    # Dahili Akıllı Kural Motoru Fallback
-    return {
-        "titles": [
-            f"🔥 {channel_name.upper()} İLE {game_type.upper()} • SIFIR KARE KAYBI & FULL FPS!",
-            f"⚡ YAYINDAYIZ! {channel_name} • Rekabetçi Kaos & Sohbet",
-            f"🎯 1080P60 AKICI YAYIN • {channel_name} ile Dereceli / Macera"
-        ],
-        "polls": [
-            "Bugün hangi silahı / taktiği deneyelim?",
-            "Yayın sonunda topluluk etkinliği / özel lobi yapılsın mı?"
-        ],
-        "challenges": [
-            "Öldüğünde 10 şınav çek / su molası ver.",
-            "Chat'in seçeceği mod veya arabayla görevi tamamla."
-        ],
-        "advice": f"Yayın başlangıcında ilk 10 dakika sohbet sahnesini kullanarak izleyicilerin toplanmasını bekleyin. {game_type} oynarken NVENC kodlayıcısını ve 8000 kbps'yi koruyun."
+def generate_ai_stream_strategy(channel_name="Ripleytia", game_type="FiveM / GTA V", style="Eğlenceli & Dinamik"):
+    strategies = {
+        "FiveM / GTA V (Roleplay)": {
+            "titles": [
+                f"🚨 [{channel_name}] LOS SANTOS SOKAKLARI HAREKETLİ! | Hard RP | 0 Dropped Frames",
+                f"🔫 GİZLİ OPERASYON & SOYGUN PLANI | {channel_name} ile FiveM Gecesi",
+                f"🚔 DEPARTMAN ACİL DURUM KODU! | Roleplay Zirvesi | {channel_name}"
+            ],
+            "poll_ideas": [
+                "Polisten kaçarken hangi aracı tercih edelim? (Sultan RS / Dominator)",
+                "Bu gece yasa dışı işlere bulaşalım mı? (Evet / Hayır)",
+                "Hangi bölgede devriye atalım? (Sandy Shores / Şehir Merkezi)"
+            ],
+            "stream_tips": "FiveM için OBS sahnenizde ReShade koruması devrede. Oyun içi telsiz ve Discord ses düzeylerini ayrıştırmak için Application Audio Capture kullanın."
+        },
+        "Valorant / CS2 (Rekabetçi FPS)": {
+            "titles": [
+                f"🎯 RADYANT / GLOBAL YOLCULUĞU! | [{channel_name}] | 144Hz+ 0 Input Lag",
+                f"🔥 KAFADAN VURUŞ MAKİNESİ! | Dereceli Maçlar | {channel_name} Canlıda",
+                f"⚡ CLUTCH OR LOSE! | Espor Modu Aktif | {channel_name}"
+            ],
+            "poll_ideas": [
+                "Sonraki elde hangi silahı alayım? (Vandal / Phantom)",
+                "Bölgeye agresif mi girelim pasif mi bekleyelim?",
+                "Bu maç kaç kill alırız? (20+ / 15-20 / 15 altı)"
+            ],
+            "stream_tips": "FPS oyunlarında düşük gecikme için NVENC P6 Tuning Ultra-Low Latency profilini ve RNNoise mikrofon filtresini aktif tuttuk."
+        }
     }
+    return strategies.get(game_type, {
+        "titles": [f"🚀 {channel_name} CANLI YAYINDA! | Keyifli Sohbet & Oyunlar"],
+        "poll_ideas": ["Bir sonraki yayında hangi oyunu oynayalım?"],
+        "stream_tips": "OBS ayarlarınız donanımınıza göre optimize edildi."
+    })

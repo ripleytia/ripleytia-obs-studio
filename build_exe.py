@@ -35,6 +35,22 @@ if os.path.exists(built_exe):
     dest_exe = os.path.join(desktop_path, f"{output_name}.exe")
     shutil.copy2(built_exe, dest_exe)
     print("BAŞARILI: Masaüstüne kopyalandı ->", dest_exe)
+    
+    # ZIP paketi oluştur
+    dest_zip = os.path.join(desktop_path, f"{output_name}.zip")
+    import zipfile
+    with zipfile.ZipFile(dest_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        zipf.write(dest_exe, arcname=f"{output_name}.exe")
+    print("BAŞARILI: ZIP arşivi oluşturuldu ->", dest_zip)
+    
+    # SHA-256 hesapla
+    import hashlib
+    h = hashlib.sha256()
+    with open(dest_exe, "rb") as f:
+        while chunk := f.read(8192):
+            h.update(chunk)
+    sha256_hash = h.hexdigest()
+    print("SHA-256:", sha256_hash)
 else:
     print("HATA: dist içinde exe bulunamadı!")
     print("STDOUT:", res.stdout[-1500:])
