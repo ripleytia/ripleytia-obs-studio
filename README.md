@@ -1,4 +1,4 @@
-# 🎥 Ripleytia OBS AI Studio (v1.5.0 Güncel Versiyon)
+# 🎥 Ripleytia OBS AI Studio (v1.5.1 Güncel Versiyon)
 
 <p align="center">
   <img src="assets/logo.png" width="160" alt="Ripleytia Logo" />
@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Canlı Yayıncılar ve Rekabetçi Espor Oyuncuları İçin Yapay Zeka Destekli OBS Studio & Sahne/Overlay Stüdyosu</b><br>
-  <i>EsportsDesignFactory • Grunge Doku Katmanları • 3D Extruded Tipografi • Neon Volumetric Aura • %50 Anti-Repetition Eşiği</i>
+  <i>EsportsDesignFactory • Grunge Doku Katmanları • 3D Extruded Tipografi • Neon Volumetric Aura • Donma Hatası Düzeltmesi</i>
 </p>
 
 <p align="center">
@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-blueviolet?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/UI-CustomTkinter-blueviolet?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Anti--Cheat-100%25%20Uyumlu%20(Safe)-brightgreen?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Sürüm-v1.5.0%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Sürüm-v1.5.1%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
 </p>
 
 ---
@@ -84,9 +84,9 @@ Uygulama açık kaynak kodludur, hiçbir reklam veya arka plan zararlısı içer
 * **Dosya Adı:** `Ripleytia OBS AI Studio.exe`
 * **SHA-256 Özeti:**
   ```text
-  2c67bab3e70cd8dced2031515562c5900e1f0c0613c1b2bfd1cb6d310ed40e4b
+  b4de135b1ea272946d1d69c3000f0e4371d80cc62fef6c553412dd8e8c57250a
   ```
-* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/2c67bab3e70cd8dced2031515562c5900e1f0c0613c1b2bfd1cb6d310ed40e4b)
+* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/b4de135b1ea272946d1d69c3000f0e4371d80cc62fef6c553412dd8e8c57250a)
 
 ---
 
