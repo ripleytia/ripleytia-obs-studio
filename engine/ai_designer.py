@@ -261,14 +261,21 @@ class EsportsDesignFactory:
     # ------------------------------------------------------------------
     # Plan Üretici
     # ------------------------------------------------------------------
+
+    MAX_MUTATION_RETRIES = 3  # Fail-safe: 3 denemede bulunamazsa en iyi adayı kabul et
+
     def generate_plan(
         self,
         requested_trend: Optional[str],
         query: str,
         preset_name: str = ""
     ) -> MasterDesignPlan:
-        rng = random.Random()
-        for attempt in range(20):
+        rng = random.Random(int(time.time() * 1000))
+        best_traits = None
+        best_skeleton = None
+        best_trend = None
+
+        for attempt in range(self.MAX_MUTATION_RETRIES):
             rng = random.Random(int(time.time() * 1000) + attempt * 7919)
 
             # Trend seç
@@ -290,22 +297,34 @@ class EsportsDesignFactory:
                 layout       = rng.choice(LAYOUTS),
             )
 
-            if not self._history.is_too_similar(traits):
-                break
+            # İlk adayı her zaman kaydet (en kötü ihtimal için)
+            if best_traits is None:
+                best_traits  = traits
+                best_skeleton = skeleton
+                best_trend   = trend
 
-        palette = AIColorHarmonizer.resolve(trend.value, preset_name, query)
-        self._history.record(traits)
-        self._trend_history.append((trend, skeleton))
+            if not self._history.is_too_similar(traits):
+                # Benzersiz aday bulundu — hemen kullan
+                best_traits  = traits
+                best_skeleton = skeleton
+                best_trend   = trend
+                break
+            # else: benzer → bir sonraki denemeye geç (max 3)
+
+        # Garantili devam: en iyi (veya 3. deneme) aday kullanılır
+        palette = AIColorHarmonizer.resolve(best_trend.value, preset_name, query)
+        self._history.record(best_traits)
+        self._trend_history.append((best_trend, best_skeleton))
         if len(self._trend_history) > 15:
             self._trend_history.pop(0)
 
         return MasterDesignPlan(
             design_id=str(uuid.uuid4())[:8],
-            trend=trend,
-            skeleton=skeleton,
+            trend=best_trend,
+            skeleton=best_skeleton,
             palette=palette,
             seed=rng.randint(0, 2**31),
-            traits=traits,
+            traits=best_traits,
         )
 
     # ------------------------------------------------------------------

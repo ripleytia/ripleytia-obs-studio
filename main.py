@@ -417,23 +417,54 @@ class RipleytiaOBSApp(ctk.CTk):
         self._set_status("🎨 Yapay zeka eşsiz yayın paketini tasarlıyor...", THEME["cyan"])
 
         def worker():
-            res = build_ai_scene_collection(
-                channel_name=ch_name,
-                theme_name=raw_theme,
-                collection_name=col_name,
-                custom_color_query=color_query
-            )
-            self.after(0, lambda: self._finish_ai_pack(ch_name, res))
+            try:
+                res = build_ai_scene_collection(
+                    channel_name=ch_name,
+                    theme_name=raw_theme,
+                    collection_name=col_name,
+                    custom_color_query=color_query
+                )
+                self.after(0, lambda: self._finish_ai_pack(ch_name, res))
+            except Exception as exc:
+                import traceback
+                err_msg = f"⚠️ Grafik motoru hatası: {exc}"
+                tb = traceback.format_exc()
+                def _on_error():
+                    self.btn_create_ai_pack.configure(
+                        state="normal",
+                        text="🎲 Benzersiz Yeni Tasarım Türet & OBS'e Ekle (Anti-Repetition)"
+                    )
+                    self._set_status(err_msg, THEME["danger"])
+                    self.txt_ai_scene_log.configure(state="normal")
+                    self.txt_ai_scene_log.delete("1.0", "end")
+                    self.txt_ai_scene_log.insert("1.0", f"{err_msg}\n\n{tb}")
+                    self.txt_ai_scene_log.configure(state="disabled")
+                self.after(0, _on_error)
 
         threading.Thread(target=worker, daemon=True).start()
 
     def _finish_ai_pack(self, ch_name, res):
-        self.btn_create_ai_pack.configure(state="normal", text="🎲 Benzersiz Yeni Tasarım Türet & OBS'e Ekle (Anti-Repetition)")
+        self.btn_create_ai_pack.configure(
+            state="normal",
+            text="🎲 Benzersiz Yeni Tasarım Türet & OBS'e Ekle (Anti-Repetition)"
+        )
+
+        # --- Hata kontrolü ---
+        if not res.get("success", False):
+            err = res.get("error", "Bilinmeyen hata")
+            tb  = res.get("traceback", "")
+            self._set_status(f"⚠️ Grafik motoru hatası: {err}", THEME["danger"])
+            self.txt_ai_scene_log.configure(state="normal")
+            self.txt_ai_scene_log.delete("1.0", "end")
+            self.txt_ai_scene_log.insert("1.0", f"HATA: {err}\n\n{tb}")
+            self.txt_ai_scene_log.configure(state="disabled")
+            return
 
         assets = res.get("assets", {})
-        start_p = assets.get("start_banner")
-        cam_p = assets.get("webcam_overlay")
-        chat_p = assets.get("chat_overlay")
+        # Doğru key adları: build_ai_scene_collection'dan dönen dict
+        start_p = assets.get("starting") or assets.get("start_banner")
+        cam_p   = assets.get("webcam")   or assets.get("webcam_overlay")
+        chat_p  = assets.get("chat")     or assets.get("chat_overlay")
 
         try:
             if start_p and os.path.exists(start_p):
@@ -450,46 +481,56 @@ class RipleytiaOBSApp(ctk.CTk):
                 im3 = Image.open(chat_p).resize((280, 155), Image.Resampling.LANCZOS)
                 self.tk_p3 = ctk.CTkImage(im3, size=(280, 155))
                 self.lbl_prev_chat.configure(image=self.tk_p3, text="")
-        except Exception:
-            pass
+        except Exception as img_err:
+            self._set_status(f"⚠️ Önizleme yüklenemedi: {img_err}", THEME["warning"])
 
-        plan = res.get("plan")
-        if plan:
-            trend_name = plan.trend.value
-            skel_name = plan.skeleton.value
-            pal_name = plan.palette.name
-            design_id = plan.design_id
+        # plan artık bir dict olarak geliyor (MasterDesignPlan objesi değil)
+        plan = res.get("plan") or {}
+        if isinstance(plan, dict):
+            trend_name = plan.get("trend", "Özgün Espor / Yayıncı Trendi")
+            skel_name  = plan.get("skeleton", "Çok Katmanlı Geometri")
+            pal_name   = plan.get("palette", "Özel")
+            design_id  = plan.get("design_id", "PRO-STREAM")
+            traits     = plan.get("traits", {})
         else:
-            trend_name = "Özgün Espor / Yayıncı Trendi"
-            skel_name = "Çok Katmanlı Geometri"
-            pal_name = "Özel"
-            design_id = "PRO-STREAM"
+            # eski obje formatı (geriye uyumluluk)
+            trend_name = getattr(plan, "trend", type("", (), {"value": "Özgün"})()).value if plan else "Özgün"
+            skel_name  = getattr(plan, "skeleton", type("", (), {"value": "Çok Katmanlı"})()).value if plan else "Çok Katmanlı"
+            pal_name   = getattr(getattr(plan, "palette", None), "name", "Özel") if plan else "Özel"
+            design_id  = getattr(plan, "design_id", "PRO-STREAM")
+            traits     = {}
 
-        ticker_p = assets.get("ticker_overlay", "")
+        ticker_p = assets.get("ticker", assets.get("ticker_overlay", ""))
 
-        log_txt = f"""🎉 ÇOK KATMANLI PROFESYONEL YAYINCI SAHNE PAKETİ ÜRETİLDİ!
-- Tasarım Kimliği (Design ID)     : {design_id} (Sıfır Tekrar - Anti-Repetition Onaylı)
+        log_txt = f"""🎉 ESPORTS DESIGN FACTORY — SIFIRDAN ÜRETİLDİ!
+- Tasarım Kimliği (Design ID)     : {design_id} (Anti-Repetition Onaylı)
 - Tasarım Trendi (Art Direction)  : {trend_name}
-- İskelet Düzeni (Skeleton Layout): {skel_name} (Çok Katmanlı Şekil Geometrisi)
+- İskelet Düzeni (Skeleton Layout): {skel_name}
 - Renk Paleti (Harmonizer)        : {pal_name}
+- Grunge Doku Türü                : {traits.get("texture", "—")}
+- Emblem Şekli                    : {traits.get("emblem", "—")}
+- Tipografi Stili                 : {traits.get("typo", "—")}
+- Neon Aura Ailesi                : {traits.get("aura", "—")}
+- Kompozisyon Düzeni              : {traits.get("layout", "—")}
 - Sahne Koleksiyonu Adı           : {res.get('collection_name')}
 - OBS JSON Dosya Yolu             : {res.get('filepath')}
 - Açılış Ekranı Bannerı           : {start_p}
 - Webcam Çerçevesi                : {cam_p}
 - Sohbet Çerçevesi                : {chat_p}
 - Etkinlik Şeridi (Ticker)        : {ticker_p}
-- AI Ses Filtresi                 : Mikrofona RNNoise Yapay Zeka Gürültü Engelleme bağlandı!
-- ReShade Koruması                : capture_overlays = false (FiveM / GTA V çökmez)
 
 OBS Studio'yu açıp üst menüden 'Sahne Koleksiyonu' -> '{res.get('collection_name')}' seçerek yayına başlayabilirsiniz!
-Her butona bastığınızda görsel hiyerarşi, şekil geometrisi ve paneller tamamen değişir!
+Her butona bastığınızda görsel hiyerarşi, doku katmanı ve kompozisyon tamamen değişir!
 """
         self.txt_ai_scene_log.configure(state="normal")
         self.txt_ai_scene_log.delete("1.0", "end")
         self.txt_ai_scene_log.insert("1.0", log_txt)
         self.txt_ai_scene_log.configure(state="disabled")
 
-        self._set_status(f"🎉 '{res.get('collection_name')}' sahne paketi OBS'e eklendi! ({trend_name})", THEME["success"])
+        self._set_status(
+            f"🎉 '{res.get('collection_name')}' sahne paketi OBS'e eklendi! ({trend_name})",
+            THEME["success"]
+        )
 
     # ==========================================================================
     # SEKME 2: PERFORMANS MONİTÖRÜ & DONANIM (DASHBOARD)
