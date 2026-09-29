@@ -2,8 +2,9 @@
 """
 engine/ai_designer.py
 ================================================================================
-OBS AI Studio - Radikal Prosedürel Tasarım, Tipografi & Anti-Repetition Motoru
-Sürüm: 1.3.0
+OBS AI Studio - Profesyonel Yayıncı Katmanlı Grafik & Anti-Repetition Motoru
+Sürüm: 1.4.0
+Shroud, Ninja, VCT ve Espor Turnuva Seviyesinde Çok Katmanlı Grafik Üreticisi
 ================================================================================
 """
 
@@ -19,13 +20,26 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, List, Dict, Tuple, Any
-import requests
 from PIL import Image, ImageDraw, ImageFont
 
 
 # ==============================================================================
-# 1. TEMEL VERİ YAPILARI (MODELS)
+# 1. PROFESYONEL YAYINCI TASARIM TRENDLERİ (ART DIRECTION TRENDS)
 # ==============================================================================
+
+class ArtDirectionTrend(str, Enum):
+    ESPORTS_AGGRESSIVE = "🔥 ESPOR / AGRESİF (Valorant Champions / VCT)"
+    BOLD_BRUTALISM = "⬛ BOLD BRUTALISM (Endüstriyel & Devasa Tipografi)"
+    TECH_FUTURE_HUD = "⚡ TECH / MINIMALIST FUTURE (Cyberpunk HUD)"
+    PREMIUM_STREAM = "💎 PREMIUM STREAM (Modern Lüks & Glassmorphism)"
+
+
+class SkeletonLayout(str, Enum):
+    CENTER_HERO_CARD = "center_hero_card"
+    LEFT_MONOLITH_DOCK = "left_monolith_dock"
+    ASYMMETRIC_SPLIT_WEDGE = "asymmetric_split_wedge"
+    CINEMATIC_BROADCAST_RIBBON = "cinematic_broadcast_ribbon"
+
 
 @dataclass
 class ColorPalette:
@@ -40,534 +54,213 @@ class ColorPalette:
     border_color: Tuple[int, int, int, int]
 
 
-def hex_to_rgba(hex_code: str, alpha: int = 255) -> Tuple[int, int, int, int]:
-    """Hex kodunu (örn: #bc13fe) RGBA tuple formatına dönüştürür."""
-    hex_code = hex_code.lstrip("#")
-    if len(hex_code) == 3:
-        hex_code = "".join([c * 2 for c in hex_code])
-    if len(hex_code) >= 6:
-        r = int(hex_code[0:2], 16)
-        g = int(hex_code[2:4], 16)
-        b = int(hex_code[4:6], 16)
-        return (r, g, b, alpha)
-    return (138, 43, 226, alpha)
-
-
-def hsl_to_rgba(h_deg: float, s_pct: float, l_pct: float, alpha: int = 255) -> Tuple[int, int, int, int]:
-    """HSL derecesini RGBA formatına dönüştürür."""
-    h = (h_deg % 360) / 360.0
-    s = max(0.0, min(1.0, s_pct / 100.0))
-    l = max(0.0, min(1.0, l_pct / 100.0))
-    r, g, b = colorsys.hls_to_rgb(h, l, s)
-    return (int(r * 255), int(g * 255), int(b * 255), alpha)
-
-
-# ==============================================================================
-# 2. SANAT AKIMLARI VE GÖRSEL FİZİK KURALLARI (ART MOVEMENTS)
-# ==============================================================================
-
-class ArtMovement(str, Enum):
-    CYBERPUNK_HUD = "Cyberpunk HUD & High-Tech"
-    NEO_BRUTALISM = "Neo-Brutalism & Industrial Raw"
-    SWISS_INTERNATIONAL = "Swiss International & Clean Grid"
-    MINIMAL_ARCHITECTURAL = "Minimal Architectural & Fine Line"
-    Y2K_RETRO_FUTURISM = "Y2K Acid & Retro-Futurism"
-    DARK_ESPORTS_MECHA = "Dark Esports Mecha & Angular Aggression"
-
-
-@dataclass
-class MovementPhysics:
-    corner_style: str            # 'sharp', 'chamfer', 'rounded', 'pill'
-    border_width: int            # 1, 2, 3, 4 piksel
-    shadow_type: str             # 'hard_offset', 'soft_ambient', 'neon_glow', 'none'
-    shadow_offset: Tuple[int, int]
-    box_opacity: float           # 0.0 - 1.0
-    decor_style: str             # 'brackets', 'raw_numbers', 'grid_cross', 'minimal_dot', 'chroma_pill', 'hazard'
-    diffusion_style: str
-
-
-MOVEMENT_PHYSICS_MAP: Dict[ArtMovement, MovementPhysics] = {
-    ArtMovement.CYBERPUNK_HUD: MovementPhysics(
-        corner_style="chamfer",
-        border_width=2,
-        shadow_type="neon_glow",
-        shadow_offset=(0, 0),
-        box_opacity=0.75,
-        decor_style="brackets",
-        diffusion_style="cyberpunk aesthetic, high-tech holographic HUD interface, glowing neon vector lines, tech brackets, scifi user interface"
-    ),
-    ArtMovement.NEO_BRUTALISM: MovementPhysics(
-        corner_style="sharp",
-        border_width=4,
-        shadow_type="hard_offset",
-        shadow_offset=(8, 8),
-        box_opacity=1.0,
-        decor_style="raw_numbers",
-        diffusion_style="neo-brutalism graphic design, ultra bold borders, stark contrast, offset drop shadows, industrial typography, raw aesthetic"
-    ),
-    ArtMovement.SWISS_INTERNATIONAL: MovementPhysics(
-        corner_style="sharp",
-        border_width=1,
-        shadow_type="none",
-        shadow_offset=(0, 0),
-        box_opacity=0.92,
-        decor_style="grid_cross",
-        diffusion_style="international typographic style, swiss style graphic design, asymmetrical balance, mathematical grid, clean elegance"
-    ),
-    ArtMovement.MINIMAL_ARCHITECTURAL: MovementPhysics(
-        corner_style="rounded",
-        border_width=1,
-        shadow_type="soft_ambient",
-        shadow_offset=(0, 4),
-        box_opacity=0.45,
-        decor_style="minimal_dot",
-        diffusion_style="minimalist luxury design, architectural clean layout, ultra-thin wireframes, subtle frosted glassmorphism"
-    ),
-    ArtMovement.Y2K_RETRO_FUTURISM: MovementPhysics(
-        corner_style="pill",
-        border_width=3,
-        shadow_type="neon_glow",
-        shadow_offset=(4, 4),
-        box_opacity=0.85,
-        decor_style="chroma_pill",
-        diffusion_style="Y2K aesthetic, early 2000s cyber rave, liquid chrome badges, rounded pill forms, vaporwave cybercore"
-    ),
-    ArtMovement.DARK_ESPORTS_MECHA: MovementPhysics(
-        corner_style="chamfer",
-        border_width=3,
-        shadow_type="hard_offset",
-        shadow_offset=(4, 4),
-        box_opacity=0.90,
-        decor_style="hazard",
-        diffusion_style="competitive esports broadcast package, Valorant Champions UI aesthetic, mecha armor cuts, aggressive diagonal accents"
-    ),
-}
-
-
-# ==============================================================================
-# 3. RADİKAL DÜZEN VE KOMPOZİSYON ŞEMALARI (LAYOUT MUTATION)
-# ==============================================================================
-
-class LayoutArchetype(str, Enum):
-    LEFT_VERTICAL_MONOLITH = "left_vertical_monolith"
-    BOTTOM_HORIZONTAL_DOCK = "bottom_horizontal_dock"
-    ASYMMETRIC_SPLIT_DIAGONAL = "asymmetric_split_diagonal"
-    FRAMELESS_DECENTRALIZED_HUD = "frameless_decentralized_hud"
-    CORNER_PINNED_COMPACT = "corner_pinned_compact"
-    BRUTALIST_STACKED_CARDS = "brutalist_stacked_cards"
-
-
-@dataclass
-class ElementBox:
-    x: float
-    y: float
-    width: float
-    height: float
-
-
-@dataclass
-class LayoutComposition:
-    archetype: LayoutArchetype
-    webcam_box: ElementBox
-    chat_box: ElementBox
-    ticker_box: ElementBox
-    pattern_type: str            # 'hex_mesh', 'scanlines', 'diagonal_stripes', 'dot_matrix', 'cyber_grid', 'none'
-    align_mode: str              # 'left', 'center', 'right'
-
-
-LAYOUT_CATALOG: Dict[LayoutArchetype, LayoutComposition] = {
-    LayoutArchetype.LEFT_VERTICAL_MONOLITH: LayoutComposition(
-        archetype=LayoutArchetype.LEFT_VERTICAL_MONOLITH,
-        webcam_box=ElementBox(x=0.03, y=0.05, width=0.20, height=0.20),
-        chat_box=ElementBox(x=0.03, y=0.28, width=0.20, height=0.55),
-        ticker_box=ElementBox(x=0.03, y=0.86, width=0.20, height=0.08),
-        pattern_type="diagonal_stripes",
-        align_mode="left"
-    ),
-    LayoutArchetype.BOTTOM_HORIZONTAL_DOCK: LayoutComposition(
-        archetype=LayoutArchetype.BOTTOM_HORIZONTAL_DOCK,
-        webcam_box=ElementBox(x=0.76, y=0.72, width=0.21, height=0.23),
-        chat_box=ElementBox(x=0.03, y=0.68, width=0.18, height=0.26),
-        ticker_box=ElementBox(x=0.23, y=0.88, width=0.51, height=0.07),
-        pattern_type="cyber_grid",
-        align_mode="center"
-    ),
-    LayoutArchetype.ASYMMETRIC_SPLIT_DIAGONAL: LayoutComposition(
-        archetype=LayoutArchetype.ASYMMETRIC_SPLIT_DIAGONAL,
-        webcam_box=ElementBox(x=0.77, y=0.05, width=0.20, height=0.21),
-        chat_box=ElementBox(x=0.03, y=0.58, width=0.22, height=0.37),
-        ticker_box=ElementBox(x=0.28, y=0.05, width=0.46, height=0.06),
-        pattern_type="hex_mesh",
-        align_mode="center"
-    ),
-    LayoutArchetype.FRAMELESS_DECENTRALIZED_HUD: LayoutComposition(
-        archetype=LayoutArchetype.FRAMELESS_DECENTRALIZED_HUD,
-        webcam_box=ElementBox(x=0.04, y=0.70, width=0.19, height=0.23),
-        chat_box=ElementBox(x=0.80, y=0.45, width=0.17, height=0.48),
-        ticker_box=ElementBox(x=0.30, y=0.02, width=0.40, height=0.05),
-        pattern_type="dot_matrix",
-        align_mode="center"
-    ),
-    LayoutArchetype.CORNER_PINNED_COMPACT: LayoutComposition(
-        archetype=LayoutArchetype.CORNER_PINNED_COMPACT,
-        webcam_box=ElementBox(x=0.78, y=0.72, width=0.19, height=0.22),
-        chat_box=ElementBox(x=0.78, y=0.22, width=0.19, height=0.46),
-        ticker_box=ElementBox(x=0.03, y=0.03, width=0.38, height=0.06),
-        pattern_type="scanlines",
-        align_mode="center"
-    ),
-    LayoutArchetype.BRUTALIST_STACKED_CARDS: LayoutComposition(
-        archetype=LayoutArchetype.BRUTALIST_STACKED_CARDS,
-        webcam_box=ElementBox(x=0.74, y=0.06, width=0.22, height=0.26),
-        chat_box=ElementBox(x=0.74, y=0.36, width=0.22, height=0.48),
-        ticker_box=ElementBox(x=0.74, y=0.87, width=0.22, height=0.07),
-        pattern_type="none",
-        align_mode="left"
-    ),
-}
-
-
-# ==============================================================================
-# 4. TİPOGRAFİ EŞLEŞMELERİ (TYPOGRAPHY PAIRINGS)
-# ==============================================================================
-
-@dataclass
-class TypographyPairing:
-    name: str
-    header_category: str        # 'display_heavy', 'monospace', 'serif', 'geometric', 'swiss'
-    body_category: str
-    header_weight: str
-    tracking_px: int
-    uppercase: bool
-    recommended_movements: List[ArtMovement]
-
-
-TYPOGRAPHY_CATALOG: List[TypographyPairing] = [
-    TypographyPairing(
-        name="Industrial Heavy & Terminal Mono",
-        header_category="display_heavy",
-        body_category="monospace",
-        header_weight="Black (900)",
-        tracking_px=2,
-        uppercase=True,
-        recommended_movements=[ArtMovement.NEO_BRUTALISM, ArtMovement.DARK_ESPORTS_MECHA]
-    ),
-    TypographyPairing(
-        name="Akzidenz Swiss & Precision Grotesk",
-        header_category="swiss",
-        body_category="swiss",
-        header_weight="Bold (700)",
-        tracking_px=-1,
-        uppercase=False,
-        recommended_movements=[ArtMovement.SWISS_INTERNATIONAL, ArtMovement.MINIMAL_ARCHITECTURAL]
-    ),
-    TypographyPairing(
-        name="Cyber HUD Matrix & Space Mono",
-        header_category="monospace",
-        body_category="monospace",
-        header_weight="Bold (700)",
-        tracking_px=5,
-        uppercase=True,
-        recommended_movements=[ArtMovement.CYBERPUNK_HUD]
-    ),
-    TypographyPairing(
-        name="Y2K Chromatic & Rounded Display",
-        header_category="geometric",
-        body_category="display_heavy",
-        header_weight="ExtraBold (800)",
-        tracking_px=3,
-        uppercase=True,
-        recommended_movements=[ArtMovement.Y2K_RETRO_FUTURISM]
-    ),
-    TypographyPairing(
-        name="Architectural Fine Line & Serif",
-        header_category="serif",
-        body_category="geometric",
-        header_weight="Light (300)",
-        tracking_px=6,
-        uppercase=True,
-        recommended_movements=[ArtMovement.MINIMAL_ARCHITECTURAL]
-    ),
-]
-
-
-def get_font_by_category(category: str, size: int = 36, bold: bool = True) -> ImageFont.FreeTypeFont:
-    """Windows sistem fontlarından kategoriye göre en uygun yazı tipini yükler."""
+def get_system_font(name: str, size: int) -> ImageFont.FreeTypeFont:
+    """Windows sistem fontlarını güvenle yükler."""
     windir = os.environ.get("WINDIR", r"C:\Windows")
-    fonts_dir = os.path.join(windir, "Fonts")
-
-    mapping = {
-        "display_heavy": ["impact.ttf", "arialbd.ttf", "segoeuib.ttf"],
-        "monospace": ["consolab.ttf" if bold else "consola.ttf", "courbd.ttf" if bold else "cour.ttf"],
-        "serif": ["georgiab.ttf" if bold else "georgia.ttf", "timesbd.ttf" if bold else "times.ttf"],
-        "geometric": ["trebucbd.ttf" if bold else "trebuc.ttf", "verdanab.ttf" if bold else "verdana.ttf"],
-        "swiss": ["arialbd.ttf" if bold else "arial.ttf", "segoeuib.ttf" if bold else "segoeui.ttf"]
-    }
-
-    candidates = mapping.get(category, ["segoeuib.ttf" if bold else "segoeui.ttf", "arial.ttf"])
-    for fn in candidates:
-        fp = os.path.join(fonts_dir, fn)
-        if os.path.exists(fp):
+    fp = os.path.join(windir, "Fonts", name)
+    if os.path.exists(fp):
+        try:
+            return ImageFont.truetype(fp, size)
+        except Exception:
+            pass
+    # Alternatif font listesi
+    for alt in ["arialbd.ttf", "impact.ttf", "segoeuib.ttf", "arial.ttf"]:
+        alt_fp = os.path.join(windir, "Fonts", alt)
+        if os.path.exists(alt_fp):
             try:
-                return ImageFont.truetype(fp, size)
+                return ImageFont.truetype(alt_fp, size)
             except Exception:
                 pass
     return ImageFont.load_default()
 
 
 # ==============================================================================
-# 5. AI & NLP DESTEKLİ RENK ENTEGRATÖRÜ (COLOR HARMONIZER)
+# 2. RENK UYUMLAYICI (AI COLOR HARMONIZER)
 # ==============================================================================
 
 class AIColorHarmonizer:
     PRESET_PALETTES = {
         "Cyber Gothic Purple": ColorPalette(
             name="Cyber Gothic Purple",
-            bg_start=(15, 10, 26, 255),
-            bg_end=(35, 12, 60, 255),
-            neon_primary=(138, 43, 226, 255),
-            neon_secondary=(199, 125, 255, 255),
+            bg_start=(14, 10, 24, 255),
+            bg_end=(32, 14, 52, 255),
+            neon_primary=(168, 85, 247, 255),
+            neon_secondary=(216, 180, 254, 255),
             neon_accent=(0, 245, 212, 255),
-            text_main=(245, 235, 255, 255),
-            text_sub=(180, 160, 210, 255),
-            border_color=(160, 60, 255, 255)
+            text_main=(255, 255, 255, 255),
+            text_sub=(200, 185, 220, 255),
+            border_color=(168, 85, 247, 255)
         ),
         "Neon Cyberpunk (Mavi/Pembe)": ColorPalette(
             name="Neon Cyberpunk",
-            bg_start=(10, 14, 25, 255),
-            bg_end=(20, 30, 50, 255),
+            bg_start=(8, 12, 22, 255),
+            bg_end=(18, 28, 48, 255),
             neon_primary=(0, 245, 212, 255),
             neon_secondary=(255, 0, 128, 255),
             neon_accent=(255, 222, 89, 255),
-            text_main=(240, 250, 255, 255),
-            text_sub=(150, 200, 230, 255),
+            text_main=(245, 250, 255, 255),
+            text_sub=(160, 210, 235, 255),
             border_color=(0, 245, 212, 255)
         ),
         "Blood Red (Kırmızı/Siyah)": ColorPalette(
             name="Blood Red",
             bg_start=(18, 8, 10, 255),
             bg_end=(45, 12, 16, 255),
-            neon_primary=(230, 57, 70, 255),
-            neon_secondary=(255, 107, 107, 255),
-            neon_accent=(244, 162, 97, 255),
-            text_main=(255, 240, 240, 255),
-            text_sub=(210, 160, 160, 255),
-            border_color=(230, 57, 70, 255)
+            neon_primary=(239, 68, 68, 255),
+            neon_secondary=(252, 165, 165, 255),
+            neon_accent=(245, 158, 11, 255),
+            text_main=(255, 255, 255, 255),
+            text_sub=(220, 170, 170, 255),
+            border_color=(239, 68, 68, 255)
         ),
         "Emerald Green (Yeşil/Siyah)": ColorPalette(
             name="Emerald Green",
-            bg_start=(8, 18, 14, 255),
-            bg_end=(12, 38, 24, 255),
-            neon_primary=(46, 196, 182, 255),
-            neon_secondary=(82, 183, 136, 255),
-            neon_accent=(255, 209, 102, 255),
-            text_main=(240, 255, 250, 255),
-            text_sub=(160, 215, 195, 255),
-            border_color=(46, 196, 182, 255)
+            bg_start=(6, 16, 12, 255),
+            bg_end=(14, 38, 26, 255),
+            neon_primary=(16, 185, 129, 255),
+            neon_secondary=(110, 231, 183, 255),
+            neon_accent=(251, 191, 36, 255),
+            text_main=(245, 255, 250, 255),
+            text_sub=(165, 225, 200, 255),
+            border_color=(16, 185, 129, 255)
         ),
         "Retro Synthwave": ColorPalette(
             name="Retro Synthwave",
-            bg_start=(24, 10, 36, 255),
-            bg_end=(48, 12, 54, 255),
-            neon_primary=(255, 110, 199, 255),
+            bg_start=(24, 8, 36, 255),
+            bg_end=(48, 14, 56, 255),
+            neon_primary=(255, 0, 128, 255),
             neon_secondary=(255, 175, 64, 255),
-            neon_accent=(58, 134, 255, 255),
-            text_main=(255, 245, 255, 255),
-            text_sub=(220, 170, 210, 255),
-            border_color=(255, 110, 199, 255)
+            neon_accent=(0, 220, 255, 255),
+            text_main=(255, 255, 255, 255),
+            text_sub=(230, 180, 220, 255),
+            border_color=(255, 0, 128, 255)
         ),
         "Minimalist & Clean": ColorPalette(
             name="Minimalist & Clean",
             bg_start=(14, 14, 18, 255),
-            bg_end=(22, 22, 28, 255),
-            neon_primary=(230, 230, 240, 255),
+            bg_end=(24, 24, 32, 255),
+            neon_primary=(240, 240, 245, 255),
             neon_secondary=(180, 180, 200, 255),
-            neon_accent=(120, 120, 140, 255),
-            text_main=(250, 250, 255, 255),
-            text_sub=(160, 160, 180, 255),
-            border_color=(80, 80, 100, 255)
+            neon_accent=(99, 102, 241, 255),
+            text_main=(255, 255, 255, 255),
+            text_sub=(170, 170, 190, 255),
+            border_color=(120, 120, 145, 255)
         )
     }
 
-    def resolve_palette(self, preset_name: str = "Tamamen Rastgele", color_text: str = "", api_key: str = "", art_movement: Optional[ArtMovement] = None) -> ColorPalette:
-        if color_text:
-            text_lower = color_text.lower()
-            if "mor" in text_lower or "purple" in text_lower:
+    def resolve(self, trend: ArtDirectionTrend, preset_name: str = "", query: str = "") -> ColorPalette:
+        if query:
+            q = query.lower()
+            if "mor" in q or "purple" in q:
                 return self.PRESET_PALETTES["Cyber Gothic Purple"]
-            elif "siber" in text_lower or "cyber" in text_lower or "neon" in text_lower or "pembe" in text_lower:
+            elif "siber" in q or "cyber" in q or "mavi" in q:
                 return self.PRESET_PALETTES["Neon Cyberpunk (Mavi/Pembe)"]
-            elif "kırmızı" in text_lower or "red" in text_lower or "kan" in text_lower:
+            elif "kırmızı" in q or "red" in q:
                 return self.PRESET_PALETTES["Blood Red (Kırmızı/Siyah)"]
-            elif "yeşil" in text_lower or "green" in text_lower or "mint" in text_lower:
+            elif "yeşil" in q or "green" in q:
                 return self.PRESET_PALETTES["Emerald Green (Yeşil/Siyah)"]
-            elif "retro" in text_lower or "synth" in text_lower:
+            elif "retro" in q or "synth" in q or "pembe" in q:
                 return self.PRESET_PALETTES["Retro Synthwave"]
-            elif "minimal" in text_lower or "sade" in text_lower or "beyaz" in text_lower:
-                return self.PRESET_PALETTES["Minimalist & Clean"]
 
         if preset_name in self.PRESET_PALETTES:
             return self.PRESET_PALETTES[preset_name]
 
-        # Altın Oran HSL Üreticisi
-        base_h = (time.time() * 1000 % 360) + random.uniform(0, 50)
-        golden_angle = 137.508
-        sec_h = (base_h + golden_angle) % 360
-        acc_h = (base_h + golden_angle * 2) % 360
-
-        is_brutalist = (art_movement == ArtMovement.NEO_BRUTALISM)
-        if is_brutalist:
-            bg_start = (244, 240, 234, 255)
-            bg_end = (235, 230, 222, 255)
-            text_main = (18, 16, 20, 255)
-            text_sub = (70, 68, 75, 255)
-            border = (18, 16, 20, 255)
-        else:
-            bg_start = hsl_to_rgba(base_h, 45, 7, 255)
-            bg_end = hsl_to_rgba(sec_h, 50, 14, 255)
-            text_main = (248, 248, 255, 255)
-            text_sub = (185, 180, 205, 255)
-            border = hsl_to_rgba(base_h, 85, 55, 255)
-
-        primary = hsl_to_rgba(base_h, 85, 55, 255)
-        secondary = hsl_to_rgba(sec_h, 85, 65, 255)
-        accent = hsl_to_rgba(acc_h, 95, 60, 255)
-
-        return ColorPalette(
-            name=f"Procedural {int(base_h)}° Palette",
-            bg_start=bg_start,
-            bg_end=bg_end,
-            neon_primary=primary,
-            neon_secondary=secondary,
-            neon_accent=accent,
-            text_main=text_main,
-            text_sub=text_sub,
-            border_color=border
-        )
+        # Trende göre ideal renk paleti
+        if trend == ArtDirectionTrend.ESPORTS_AGGRESSIVE:
+            choices = [
+                ColorPalette("Esports VCT Red", (16, 10, 14, 255), (32, 14, 20, 255), (255, 51, 85, 255), (255, 180, 190, 255), (255, 215, 0, 255), (255, 255, 255, 255), (210, 180, 190, 255), (255, 51, 85, 255)),
+                ColorPalette("Esports Cyber Cyan", (8, 14, 24, 255), (14, 28, 48, 255), (0, 245, 212, 255), (255, 0, 128, 255), (255, 222, 89, 255), (255, 255, 255, 255), (170, 215, 235, 255), (0, 245, 212, 255)),
+                ColorPalette("Esports Gold / Black", (14, 12, 10, 255), (32, 26, 16, 255), (255, 200, 0, 255), (255, 235, 150, 255), (0, 210, 255, 255), (255, 255, 255, 255), (220, 200, 160, 255), (255, 200, 0, 255)),
+            ]
+            return random.choice(choices)
+        elif trend == ArtDirectionTrend.BOLD_BRUTALISM:
+            choices = [
+                ColorPalette("Brutalist Acid Yellow", (242, 238, 230, 255), (232, 226, 214, 255), (15, 15, 18, 255), (245, 220, 0, 255), (255, 45, 85, 255), (15, 15, 18, 255), (55, 55, 65, 255), (15, 15, 18, 255)),
+                ColorPalette("Brutalist Stark Black", (12, 12, 14, 255), (20, 20, 24, 255), (245, 220, 0, 255), (255, 255, 255, 255), (0, 240, 255, 255), (255, 255, 255, 255), (190, 190, 200, 255), (245, 220, 0, 255)),
+            ]
+            return random.choice(choices)
+        elif trend == ArtDirectionTrend.TECH_FUTURE_HUD:
+            choices = [
+                ColorPalette("Holo Cyan Sci-Fi", (6, 10, 20, 255), (12, 20, 38, 255), (0, 235, 255, 255), (140, 90, 255, 255), (0, 255, 170, 255), (245, 250, 255, 255), (150, 200, 230, 255), (0, 235, 255, 255)),
+                ColorPalette("Matrix Cyber Green", (5, 16, 10, 255), (10, 32, 18, 255), (0, 255, 136, 255), (150, 255, 200, 255), (0, 215, 255, 255), (245, 255, 250, 255), (160, 225, 195, 255), (0, 255, 136, 255)),
+            ]
+            return random.choice(choices)
+        else: # PREMIUM_STREAM
+            choices = [
+                ColorPalette("Luxury Royal Purple", (12, 8, 22, 255), (28, 14, 46, 255), (168, 85, 247, 255), (236, 72, 153, 255), (255, 215, 0, 255), (255, 255, 255, 255), (210, 195, 230, 255), (168, 85, 247, 255)),
+                ColorPalette("Deep Obsidian Frost", (10, 12, 18, 255), (18, 24, 36, 255), (129, 140, 248, 255), (192, 132, 252, 255), (56, 189, 248, 255), (255, 255, 255, 255), (190, 205, 235, 255), (129, 140, 248, 255)),
+            ]
+            return random.choice(choices)
 
 
 THEME_PALETTES = AIColorHarmonizer.PRESET_PALETTES
 
 
 # ==============================================================================
-# 6. RADİKAL TASARIM SPESİFİKASYONU VE MUTASYON MOTORU
+# 3. YAYIN TASARIM PLANI & KATI GEÇMİŞ KONTROLÜ (HARD ANTI-REPETITION)
 # ==============================================================================
 
 @dataclass
-class RadicalDesignSpec:
+class MasterDesignPlan:
     design_id: str
-    structural_hash: str
-    art_movement: ArtMovement
-    movement_physics: MovementPhysics
-    layout: LayoutComposition
-    typography: TypographyPairing
+    trend: ArtDirectionTrend
+    skeleton: SkeletonLayout
     palette: ColorPalette
-    diffusion_structural_prompt: str
+    seed: int
 
 
-class RadicalDesignMutator:
-    """
-    Tasarımı 4 bağımsız eksende (Kompozisyon, Tipografi, Sanat Akımı, Geometri)
-    mutasyona uğratan ve geçmişle benzerliği %80 altında tutan katı motor.
-    """
-    def __init__(self, history_limit: int = 15, similarity_threshold: float = 0.80):
-        self.history_limit = history_limit
-        self.similarity_threshold = similarity_threshold
-        self.history: List[Dict[str, str]] = []
+class MasterDesignMutator:
+    def __init__(self, history_len: int = 15):
+        self.history: List[Tuple[ArtDirectionTrend, SkeletonLayout]] = []
+        self.history_len = history_len
         self.harmonizer = AIColorHarmonizer()
 
-    def _extract_vector(self, movement: ArtMovement, layout: LayoutArchetype, typo: str, corner: str) -> Dict[str, str]:
-        return {
-            "movement": movement.value,
-            "layout": layout.value,
-            "typography": typo,
-            "corner": corner
+    def generate_plan(self, requested_trend: str = "", query: str = "") -> MasterDesignPlan:
+        # Trend Eşleştirme
+        trend_map = {
+            "ESPOR": ArtDirectionTrend.ESPORTS_AGGRESSIVE,
+            "BRUTALISM": ArtDirectionTrend.BOLD_BRUTALISM,
+            "TECH": ArtDirectionTrend.TECH_FUTURE_HUD,
+            "PREMIUM": ArtDirectionTrend.PREMIUM_STREAM,
         }
 
-    def _similarity(self, v1: Dict[str, str], v2: Dict[str, str]) -> float:
-        matches = sum(1 for k in v1 if v1[k] == v2.get(k))
-        return matches / float(len(v1))
+        chosen_trend = None
+        for k, v in trend_map.items():
+            if k in requested_trend.upper():
+                chosen_trend = v
+                break
 
-    def derive_radical_design(self, preset_theme: str = "🎲 Tamamen Rastgele (Radikal Mutasyon & Anti-Repetition)", color_query: str = "") -> RadicalDesignSpec:
-        max_attempts = 40
-        for _ in range(max_attempts):
-            # 1. Sanat Akımı Seçimi
-            if "Cyberpunk" in preset_theme:
-                movement = ArtMovement.CYBERPUNK_HUD
-            elif "Brutalism" in preset_theme:
-                movement = ArtMovement.NEO_BRUTALISM
-            elif "Swiss" in preset_theme:
-                movement = ArtMovement.SWISS_INTERNATIONAL
-            elif "Minimal" in preset_theme:
-                movement = ArtMovement.MINIMAL_ARCHITECTURAL
-            elif "Y2K" in preset_theme:
-                movement = ArtMovement.Y2K_RETRO_FUTURISM
-            elif "Esports" in preset_theme or "Mecha" in preset_theme:
-                movement = ArtMovement.DARK_ESPORTS_MECHA
-            else:
-                movement = random.choice(list(ArtMovement))
+        # Döngü ile asla tekrar etmeyen kombinasyon türetme
+        for _ in range(35):
+            trend = chosen_trend if chosen_trend else random.choice(list(ArtDirectionTrend))
+            skeleton = random.choice(list(SkeletonLayout))
 
-            physics = MOVEMENT_PHYSICS_MAP[movement]
+            # Son tasarımla uyuşuyorsa yeni kombinasyon zorla
+            if self.history and (trend, skeleton) == self.history[-1]:
+                continue
+            if self.history.count((trend, skeleton)) >= 2:
+                continue
 
-            # 2. Kompozisyon Seçimi
-            layout_archetype = random.choice(list(LayoutArchetype))
-            layout = LAYOUT_CATALOG[layout_archetype]
+            # Geçerli plan bulundu
+            seed = int(time.time() * 1000) ^ random.randint(100, 99999)
+            palette = self.harmonizer.resolve(trend, preset_name=requested_trend, query=query)
+            d_id = f"PRO-{hashlib.md5(f'{trend.value}_{skeleton.value}_{seed}'.encode()).hexdigest()[:8].upper()}"
 
-            # 3. Tipografi Eşleşmesi
-            compat_typos = [t for t in TYPOGRAPHY_CATALOG if movement in t.recommended_movements]
-            typography = random.choice(compat_typos) if compat_typos and random.random() < 0.85 else random.choice(TYPOGRAPHY_CATALOG)
-
-            # 4. Katı Geçmiş Kontrolü (Hard Unique Cache)
-            current_vector = self._extract_vector(movement, layout_archetype, typography.name, physics.corner_style)
-            too_similar = False
-            for past in self.history:
-                if self._similarity(current_vector, past) >= self.similarity_threshold:
-                    too_similar = True
-                    break
-
-            if too_similar:
-                continue # Reddet ve yeni varyasyon dene
-
-            # 5. Renk Paletini Çöz
-            palette = self.harmonizer.resolve_palette(preset_name=preset_theme, color_text=color_query, art_movement=movement)
-
-            # 6. İmzayı ve Kimliği Üret
-            sig = f"{movement.value}_{layout_archetype.value}_{typography.name}_{physics.corner_style}_{random.randint(100, 999)}"
-            s_hash = hashlib.md5(sig.encode("utf-8")).hexdigest()[:10]
-            design_id = f"RIPLEYTIA-{s_hash.upper()}"
-
-            # 7. Diffusion AI Modeline Yönelik Yapısal Prompt
-            diff_prompt = (
-                f"{physics.diffusion_style}, {layout_archetype.value.replace('_', ' ')} layout, "
-                f"header typography {typography.header_category} {typography.header_weight}, "
-                f"{physics.corner_style} borders, {physics.shadow_type} effect, "
-                f"colors {palette.name}, professional twitch overlay stream pack, clean vector graphic"
-            )
-
-            spec = RadicalDesignSpec(
-                design_id=design_id,
-                structural_hash=s_hash,
-                art_movement=movement,
-                movement_physics=physics,
-                layout=layout,
-                typography=typography,
-                palette=palette,
-                diffusion_structural_prompt=diff_prompt
-            )
-
-            # Geçmiş havuzuna ekle
-            self.history.append(current_vector)
-            if len(self.history) > self.history_limit:
+            self.history.append((trend, skeleton))
+            if len(self.history) > self.history_len:
                 self.history.pop(0)
 
-            return spec
+            return MasterDesignPlan(design_id=d_id, trend=trend, skeleton=skeleton, palette=palette, seed=seed)
 
         # Fallback
-        self.history.clear()
-        return self.derive_radical_design(preset_theme, color_query)
+        trend = random.choice(list(ArtDirectionTrend))
+        skeleton = random.choice(list(SkeletonLayout))
+        palette = self.harmonizer.resolve(trend)
+        d_id = f"PRO-{random.randint(1000, 9999)}"
+        return MasterDesignPlan(design_id=d_id, trend=trend, skeleton=skeleton, palette=palette, seed=123)
 
 
-# Global Tekil Örnek
-_mutator_instance = RadicalDesignMutator()
+_mutator = MasterDesignMutator()
 
 
 def get_appdata_obs_assets_dir() -> str:
@@ -578,180 +271,233 @@ def get_appdata_obs_assets_dir() -> str:
 
 
 # ==============================================================================
-# 7. ÇİZİM YARDIMCILARI (GEOMETRY & PHYSICS RENDERERS)
-# ==============================================================================
-
-def draw_cornered_box(draw: ImageDraw.Draw, 
-                      rect: Tuple[int, int, int, int], 
-                      corner_style: str, 
-                      fill_color: Tuple[int, int, int, int], 
-                      outline_color: Tuple[int, int, int, int], 
-                      border_width: int, 
-                      shadow_type: str = "none", 
-                      shadow_offset: Tuple[int, int] = (0, 0)):
-    """
-    Sanat akımının fizik kurallarına göre (Pah kırma, Sert gölge, Neon ışıma, Keskin köşe) panel çizer.
-    """
-    x, y, w, h = rect
-
-    # 1. Gölge Çizimi
-    if shadow_type == "hard_offset" and shadow_offset != (0, 0):
-        sx, sy = x + shadow_offset[0], y + shadow_offset[1]
-        draw.rectangle([(sx, sy), (sx + w, sy + h)], fill=(15, 12, 22, 230))
-    elif shadow_type == "neon_glow":
-        glow_col = (outline_color[0], outline_color[1], outline_color[2], 65)
-        draw.rectangle([(x - 4, y - 4), (x + w + 4, y + h + 4)], outline=glow_col, width=border_width + 4)
-
-    # 2. Ana Kutu Çizimi
-    if corner_style == "chamfer":
-        c = 22
-        points = [
-            (x + c, y), (x + w - c, y),
-            (x + w, y + c), (x + w, y + h - c),
-            (x + w - c, y + h), (x + c, y + h),
-            (x, y + h - c), (x, y + c)
-        ]
-        draw.polygon(points, fill=fill_color, outline=outline_color, width=border_width)
-    elif corner_style == "rounded":
-        r = 16
-        draw.rounded_rectangle([(x, y), (x + w, y + h)], radius=r, fill=fill_color, outline=outline_color, width=border_width)
-    elif corner_style == "pill":
-        r = min(w, h) // 6
-        draw.rounded_rectangle([(x, y), (x + w, y + h)], radius=r, fill=fill_color, outline=outline_color, width=border_width)
-    else: # sharp (Neo-Brutalism & Swiss)
-        draw.rectangle([(x, y), (x + w, y + h)], fill=fill_color, outline=outline_color, width=border_width)
-
-
-# ==============================================================================
-# 8. DİNAMİK AÇILIŞ VE MOLA BANNER ÜRETİCİSİ (PROSEDÜREL 1920x1080)
+# 4. ÇOK KATMANLI BANNER ÜRETİCİSİ (1920x1080 STARTING / BRB / ENDING)
 # ==============================================================================
 
 def generate_channel_banner(channel_name: str = "Ripleytia", 
-                            spec: Optional[RadicalDesignSpec] = None, 
+                            plan: Optional[MasterDesignPlan] = None, 
                             mode: str = "starting", 
                             custom_title: Optional[str] = None) -> str:
-    if spec is None:
-        spec = _mutator_instance.derive_radical_design()
+    if plan is None:
+        plan = _mutator.generate_plan()
 
     w, h = 1920, 1080
-    palette = spec.palette
-    physics = spec.movement_physics
-    layout = spec.layout
-    typo = spec.typography
+    pal = plan.palette
+    trend = plan.trend
+    skel = plan.skeleton
 
-    img = Image.new("RGBA", (w, h), palette.bg_start)
+    img = Image.new("RGBA", (w, h), pal.bg_start)
     draw = ImageDraw.Draw(img)
 
-    # 1. Dikey Gradyan Zemin
+    # 1. ZEMİN VE ARKA PLAN KATMANI (BACKGROUND MESH & SHAPES)
+    is_brutalist = (trend == ArtDirectionTrend.BOLD_BRUTALISM)
+    
+    # Dikey / Radyal Gradyan
     for y in range(h):
         blend = y / h
-        r = int(palette.bg_start[0] * (1 - blend) + palette.bg_end[0] * blend)
-        g = int(palette.bg_start[1] * (1 - blend) + palette.bg_end[1] * blend)
-        b = int(palette.bg_start[2] * (1 - blend) + palette.bg_end[2] * blend)
+        r = int(pal.bg_start[0] * (1 - blend) + pal.bg_end[0] * blend)
+        g = int(pal.bg_start[1] * (1 - blend) + pal.bg_end[1] * blend)
+        b = int(pal.bg_start[2] * (1 - blend) + pal.bg_end[2] * blend)
         draw.line([(0, y), (w, y)], fill=(r, g, b, 255))
 
-    # 2. Desen Algoritmaları
-    pat = layout.pattern_type
-    p_alpha = 45 if spec.art_movement != ArtMovement.NEO_BRUTALISM else 18
-    pat_col = (palette.neon_primary[0], palette.neon_primary[1], palette.neon_primary[2], p_alpha)
+    # Arka Plan Şekilleri ve Dinamik Çizgiler
+    if trend == ArtDirectionTrend.ESPORTS_AGGRESSIVE:
+        # 45 Derecelik Espor Şeritleri ve Agresif Polygonlar
+        for i in range(-2, 10):
+            sx = i * 260
+            poly = [(sx, 0), (sx + 120, 0), (sx + 120 + 400, h), (sx + 400, h)]
+            fill_c = (pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 28)
+            draw.polygon(poly, fill=fill_c)
+        # Ekranın arkasından taşan devasa silik kanal harfi
+        font_watermark = get_system_font("impact.ttf", 450)
+        draw.text((w - 550, -60), channel_name[0].upper(), font=font_watermark, fill=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 22))
 
-    if pat == "diagonal_stripes":
-        step = 55
-        for x in range(-w, w * 2, step):
-            draw.line([(x, 0), (x + h, h)], fill=pat_col, width=2)
-    elif pat == "hex_mesh":
-        step = 75
-        for y in range(0, h + step, step):
-            for x in range(0, w + step, step):
-                draw.regular_polygon((x, y, 18), 6, rotation=0, outline=pat_col)
-    elif pat == "cyber_grid":
-        step = 80
+    elif trend == ArtDirectionTrend.BOLD_BRUTALISM:
+        # Dev arka plan brutalist watermark yazısı
+        font_watermark = get_system_font("impact.ttf", 260)
+        wm_text = channel_name.upper()
+        draw.text((60, 40), wm_text, font=font_watermark, fill=(pal.border_color[0], pal.border_color[1], pal.border_color[2], 30))
+        # Kalın endüstriyel çizgiler
+        draw.line([(0, 180), (w, 180)], fill=pal.border_color, width=6)
+        draw.line([(0, h - 140), (w, h - 140)], fill=pal.border_color, width=6)
+        # Çapraz ikaz çizgisi şeridi
+        for x in range(0, w, 40):
+            draw.line([(x, h - 140), (x + 25, h)], fill=(pal.neon_secondary[0], pal.neon_secondary[1], pal.neon_secondary[2], 120), width=4)
+
+    elif trend == ArtDirectionTrend.TECH_FUTURE_HUD:
+        # Bal peteği veya siber ızgara
+        step = 60
         for x in range(0, w, step):
-            draw.line([(x, 0), (x, h)], fill=pat_col, width=1)
+            draw.line([(x, 0), (x, h)], fill=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 24), width=1)
         for y in range(0, h, step):
-            draw.line([(0, y), (w, y)], fill=pat_col, width=1)
-    elif pat == "dot_matrix":
-        step = 42
-        for y in range(0, h, step):
-            for x in range(0, w, step):
-                draw.point((x, y), fill=(palette.neon_accent[0], palette.neon_accent[1], palette.neon_accent[2], p_alpha * 2))
-
-    # 3. Sanat Akımına Özgü Geometrik Arka Plan Katmanları
-    if spec.art_movement == ArtMovement.NEO_BRUTALISM:
-        # Dev arka plan numarası ve ham endüstriyel çizgiler
-        font_bg_huge = get_font_by_category("display_heavy", size=240, bold=True)
-        draw.text((100, 160), "01", font=font_bg_huge, fill=(palette.border_color[0], palette.border_color[1], palette.border_color[2], 25))
-        draw.line([(0, h - 160), (w, h - 160)], fill=palette.border_color, width=4)
-    elif spec.art_movement == ArtMovement.SWISS_INTERNATIONAL:
-        # Kılavuz kolonlar ve matematiksel grid çizgileri
-        for col_x in [320, 640, 960, 1280, 1600]:
-            draw.line([(col_x, 0), (col_x, h)], fill=(palette.border_color[0], palette.border_color[1], palette.border_color[2], 25), width=1)
-        draw.text((80, 60), f"GRID // SYSTEM 24.1  •  {spec.design_id}", font=get_font_by_category("swiss", 14), fill=palette.text_sub)
-    elif spec.art_movement == ArtMovement.CYBERPUNK_HUD:
-        # HUD Telemetri çerçevesi ve köşebentler
-        m = 50
-        draw.rectangle([(m, m), (w - m, h - m)], outline=(palette.neon_primary[0], palette.neon_primary[1], palette.neon_primary[2], 90), width=2)
+            draw.line([(0, y), (w, y)], fill=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 24), width=1)
+        # 4 Köşede Yüksek Teknoloji Braketleri
+        m = 45
         for px, py in [(m, m), (w - m, m), (m, h - m), (w - m, h - m)]:
             dx = 1 if px == m else -1
             dy = 1 if py == m else -1
-            draw.line([(px, py), (px + dx * 60, py)], fill=palette.neon_accent, width=5)
-            draw.line([(px, py), (px, py + dy * 60)], fill=palette.neon_accent, width=5)
+            draw.line([(px, py), (px + dx * 80, py)], fill=pal.neon_primary, width=5)
+            draw.line([(px, py), (px, py + dy * 80)], fill=pal.neon_primary, width=5)
+            draw.rectangle([(px + dx * 12 - 4, py + dy * 12 - 4), (px + dx * 12 + 4, py + dy * 12 + 4)], fill=pal.neon_accent)
 
-    # 4. Tipografi Başlıkları
-    font_main = get_font_by_category(typo.header_category, size=78, bold=True)
-    font_sub = get_font_by_category(typo.body_category, size=32, bold=True)
-    font_tag = get_font_by_category("swiss", size=20, bold=False)
+    else: # PREMIUM_STREAM
+        # Yumuşak Difüze Ambient Neon Küreler (Glow Orbs)
+        cx1, cy1 = int(w * 0.25), int(h * 0.35)
+        cx2, cy2 = int(w * 0.75), int(h * 0.65)
+        draw.ellipse([(cx1 - 280, cy1 - 280), (cx1 + 280, cy1 + 280)], fill=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 35))
+        draw.ellipse([(cx2 - 320, cy2 - 320), (cx2 + 320, cy2 + 320)], fill=(pal.neon_secondary[0], pal.neon_secondary[1], pal.neon_secondary[2], 30))
+        # İnce lüks altın oran halkaları
+        draw.ellipse([(w // 2 - 380, h // 2 - 380), (w // 2 + 380, h // 2 + 380)], outline=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 55), width=2)
 
-    ch_text = channel_name.upper() if typo.uppercase else channel_name
+    # 2. HERO PANEL KATMANI (METNİN ARKASINDAKİ ZENGİN ŞEKİL KUTUSU)
+    # Metinlerin boyutuna ve iskelet düzenine göre dinamik panel hesaplama
+    if skel == SkeletonLayout.LEFT_MONOLITH_DOCK:
+        pw, ph = 920, 520
+        cx = 120
+        cy = (h - ph) // 2
+    elif skel == SkeletonLayout.ASYMMETRIC_SPLIT_WEDGE:
+        pw, ph = 1140, 480
+        cx = (w - pw) // 2 + 40
+        cy = (h - ph) // 2
+    elif skel == SkeletonLayout.CINEMATIC_BROADCAST_RIBBON:
+        pw, ph = 1760, 420
+        cx = (w - pw) // 2
+        cy = (h - ph) // 2
+    else: # CENTER_HERO_CARD
+        pw, ph = 1180, 480
+        cx = (w - pw) // 2
+        cy = (h - ph) // 2
+
+    # Paneli Trende Göre Çiz
+    if trend == ArtDirectionTrend.ESPORTS_AGGRESSIVE:
+        slant = 35
+        # Dış Neon Gölge / Şerit Katmanı
+        d_poly = [(cx + slant - 10, cy - 8), (cx + pw + 10, cy - 8), (cx + pw - slant + 10, cy + ph + 8), (cx - 10, cy + ph + 8)]
+        draw.polygon(d_poly, fill=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 45))
+        
+        # Ana Karbon/Metal Paralelkenar Panel
+        m_poly = [(cx + slant, cy), (cx + pw, cy), (cx + pw - slant, cy + ph), (cx, cy + ph)]
+        draw.polygon(m_poly, fill=(16, 12, 24, 240), outline=pal.neon_primary, width=4)
+        
+        # Sol Taraf Hazard İkaz Şeritleri (///)
+        for i in range(6):
+            hx = cx + 24 + i * 16
+            draw.line([(hx + slant, cy + 18), (hx, cy + ph - 18)], fill=pal.neon_secondary, width=5)
+
+        # Sağ Üst Köşe Espor Turnuva Rozeti
+        badge_poly = [(cx + pw - 280, cy), (cx + pw, cy), (cx + pw - 25, cy + 42), (cx + pw - 305, cy + 42)]
+        draw.polygon(badge_poly, fill=pal.neon_primary)
+        draw.text((cx + pw - 275, cy + 10), "VCT CHAMPIONS // LIVE", font=get_system_font("impact.ttf", 18), fill=(10, 8, 16, 255))
+
+        # Sağ Alt Ses Dalgası / Equalizer Çubukları
+        for i in range(24):
+            bx = cx + pw - 280 + i * 9
+            bh = 12 + int(48 * abs(math.sin(i * 0.45 + 1.2)))
+            draw.rectangle([(bx, cy + ph - 25 - bh), (bx + 5, cy + ph - 25)], fill=pal.neon_accent)
+
+    elif trend == ArtDirectionTrend.BOLD_BRUTALISM:
+        # Sert 14px Ofset Blok Gölge (Bulanıklık Yok)
+        draw.rectangle([(cx + 14, cy + 14), (cx + pw + 14, cy + ph + 14)], fill=(10, 10, 12, 255))
+        # Kalın 6px Çerçeveli Ham Gövde
+        bg_fill = (245, 240, 232, 255) if pal.bg_start[0] > 100 else (18, 18, 22, 245)
+        draw.rectangle([(cx, cy), (cx + pw, cy + ph)], fill=bg_fill, outline=pal.border_color, width=6)
+        
+        # Üst Siyah Başlık Bandı
+        draw.rectangle([(cx, cy), (cx + pw, cy + 48)], fill=pal.border_color)
+        draw.text((cx + 24, cy + 12), f"[ ACTIVE TRANSMISSION // {plan.design_id} ]", font=get_system_font("consola.ttf", 18), fill=pal.neon_primary)
+        
+        # Barkod Deseni (Sağ Köşede)
+        b_x = cx + pw - 180
+        for i in range(20):
+            bw = 2 if i % 3 == 0 else 4
+            draw.line([(b_x + i * 8, cy + ph - 60), (b_x + i * 8, cy + ph - 18)], fill=pal.border_color, width=bw)
+
+    elif trend == ArtDirectionTrend.TECH_FUTURE_HUD:
+        # 45 Derece Pah Kırılmış (Chamfer) Siber Panel
+        c = 32
+        pts = [
+            (cx + c, cy), (cx + pw - c, cy),
+            (cx + pw, cy + c), (cx + pw, cy + ph - c),
+            (cx + pw - c, cy + ph), (cx + c, cy + ph),
+            (cx, cy + ph - c), (cx, cy + c)
+        ]
+        # Neon Dış Işıma
+        draw.polygon(pts, fill=(10, 18, 36, 230), outline=pal.neon_primary, width=3)
+        
+        # Üst Telemetri Şeridi
+        draw.line([(cx + c, cy + 45), (cx + pw - c, cy + 45)], fill=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 120), width=1)
+        draw.text((cx + 40, cy + 14), "SYS.STATUS: BROADCAST LOCK  •  BITRATE: 8500K  •  FPS: 144  •  AI ENGINE ACTIVE", font=get_system_font("consola.ttf", 14), fill=pal.neon_accent)
+
+        # Audio Visualizer Çubukları
+        for i in range(28):
+            bx = cx + 50 + i * 14
+            bh = 10 + int(42 * abs(math.sin(i * 0.4)))
+            draw.rectangle([(bx, cy + ph - 30 - bh), (bx + 8, cy + ph - 30)], fill=pal.neon_primary)
+
+    else: # PREMIUM_STREAM
+        # Lüks Buzlu Cam Efekti (Frosted Glassmorphism)
+        # Dış yumuşak glow
+        draw.rounded_rectangle([(cx - 5, cy - 5), (cx + pw + 5, cy + ph + 5)], radius=26, outline=(pal.neon_secondary[0], pal.neon_secondary[1], pal.neon_secondary[2], 90), width=5)
+        draw.rounded_rectangle([(cx, cy), (cx + pw, cy + ph)], radius=24, fill=(20, 16, 36, 220), outline=pal.neon_primary, width=3)
+
+        # Lüks Canlı Yayın Hap Rozeti
+        pill_w, pill_h = 240, 38
+        draw.rounded_rectangle([(cx + 45, cy + 35), (cx + 45 + pill_w, cy + 35 + pill_h)], radius=19, fill=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 40), outline=pal.neon_primary, width=1)
+        draw.ellipse([(cx + 60, cy + 48), (cx + 72, cy + 60)], fill=(239, 68, 68, 255))
+        draw.text((cx + 82, cy + 44), "CANLI YAYIN • ON AIR", font=get_system_font("arialbd.ttf", 13), fill=pal.text_main)
+
+    # 3. TİPOGRAFİ KATMANI (BÜYÜK, GÖSTERİŞLİ VE HİYERARŞİK)
+    font_hero = get_system_font("impact.ttf", 96)
+    font_sub = get_system_font("arialbd.ttf", 26)
+    font_tag = get_system_font("arial.ttf", 18)
+
+    ch_text = channel_name.upper()
 
     if mode == "starting":
         sub_text = custom_title or "YAYIN BİRAZDAN BAŞLIYOR..."
-        tagline = f"{spec.art_movement.value} • 0 Dropped Frames • Canlı Yayın"
+        tagline = "Canlı Yayın & Espor Heyecanı Başlamak Üzere • Hazırlanın!"
     elif mode == "brb":
         sub_text = custom_title or "KISA BİR MOLA • HEMEN DÖNÜYORUM"
-        tagline = "Kahve Molası • Lütfen Yayından Ayrılmayın!"
+        tagline = "Kahve/İçecek Molası • Yayından Sakın Ayrılmayın!"
     else:
         sub_text = custom_title or "YAYIN SONA ERDİ • TEŞEKKÜRLER!"
         tagline = "Takip Etmeyi ve Bildirimleri Açmayı Unutmayın!"
 
-    align_center = (layout.align_mode == "center")
-    if align_center:
-        ch_box = draw.textbbox((0, 0), ch_text, font=font_main)
-        sub_box = draw.textbbox((0, 0), sub_text, font=font_sub)
-        tag_box = draw.textbbox((0, 0), tagline, font=font_tag)
+    # Metin Konumlandırma (Hero Panel İçine Kusursuz Ortalama)
+    text_x = cx + 80 if (trend != ArtDirectionTrend.ESPORTS_AGGRESSIVE) else cx + 140
+    text_y = cy + 105
 
-        cy_main = h // 2 - 80
-        draw.text(((w - (ch_box[2] - ch_box[0])) // 2 + 4, cy_main + 4), ch_text, font=font_main, fill=(0, 0, 0, 220))
-        draw.text(((w - (ch_box[2] - ch_box[0])) // 2, cy_main), ch_text, font=font_main, fill=palette.text_main)
+    # Başlık Metni ve Kalın Gölge
+    draw.text((text_x + 5, text_y + 5), ch_text, font=font_hero, fill=(0, 0, 0, 240))
+    draw.text((text_x, text_y), ch_text, font=font_hero, fill=pal.text_main)
 
-        cy_sub = cy_main + 110
-        draw.text(((w - (sub_box[2] - sub_box[0])) // 2, cy_sub), sub_text, font=font_sub, fill=palette.neon_secondary)
+    # Alt Başlık Plakası (Metin arkasına renkli kurdele/şerit)
+    sub_y = text_y + 125
+    if trend == ArtDirectionTrend.ESPORTS_AGGRESSIVE:
+        s_slant = 20
+        draw.polygon([(text_x + s_slant, sub_y), (text_x + 640, sub_y), (text_x + 640 - s_slant, sub_y + 52), (text_x, sub_y + 52)], fill=pal.neon_primary)
+        draw.text((text_x + 25, sub_y + 12), sub_text, font=font_sub, fill=(12, 10, 20, 255))
+    elif trend == ArtDirectionTrend.BOLD_BRUTALISM:
+        draw.rectangle([(text_x, sub_y), (text_x + 660, sub_y + 54)], fill=pal.neon_secondary, outline=pal.border_color, width=3)
+        draw.text((text_x + 20, sub_y + 12), sub_text, font=font_sub, fill=(10, 10, 12, 255))
+    elif trend == ArtDirectionTrend.TECH_FUTURE_HUD:
+        draw.rectangle([(text_x, sub_y), (text_x + 640, sub_y + 48)], fill=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 50), outline=pal.neon_accent, width=2)
+        draw.text((text_x + 20, sub_y + 10), f">>> {sub_text}", font=font_sub, fill=pal.neon_accent)
+    else: # PREMIUM_STREAM
+        draw.line([(text_x, sub_y - 10), (text_x + 500, sub_y - 10)], fill=pal.neon_secondary, width=2)
+        draw.text((text_x, sub_y + 10), sub_text, font=font_sub, fill=pal.neon_secondary)
 
-        cy_tag = cy_sub + 60
-        draw.text(((w - (tag_box[2] - tag_box[0])) // 2, cy_tag), tagline, font=font_tag, fill=palette.text_sub)
-    else:
-        cx_main = 120
-        cy_main = h // 2 - 90
-        draw.text((cx_main + 4, cy_main + 4), ch_text, font=font_main, fill=(0, 0, 0, 220))
-        draw.text((cx_main, cy_main), ch_text, font=font_main, fill=palette.text_main)
-        draw.text((cx_main, cy_main + 110), sub_text, font=font_sub, fill=palette.neon_secondary)
-        draw.text((cx_main, cy_main + 170), tagline, font=font_tag, fill=palette.text_sub)
+    # Açıklama Metni (Tagline)
+    tag_y = sub_y + 68
+    draw.text((text_x, tag_y), tagline, font=font_tag, fill=pal.text_sub)
 
-    # 5. Rozet & Alt Bilgi
-    pill_w, pill_h = 480, 48
-    pill_x = (w - pill_w) // 2 if align_center else 120
-    pill_y = h - 220 if align_center else h - 240
-    draw_cornered_box(
-        draw, (pill_x, pill_y, pill_w, pill_h),
-        corner_style=physics.corner_style,
-        fill_color=(12, 10, 20, 240),
-        outline_color=palette.border_color,
-        border_width=physics.border_width,
-        shadow_type=physics.shadow_type,
-        shadow_offset=(4, 4)
-    )
-    draw.ellipse([(pill_x + 18, pill_y + 16), (pill_x + 32, pill_y + 30)], fill=(239, 68, 68, 255))
-    draw.text((pill_x + 44, pill_y + 13), f"LIVE • {spec.art_movement.value}", font=get_font_by_category("monospace", 14, True), fill=palette.text_main)
+    # 4. ALT YAYINCI BİLGİ KUŞAĞI (FOOTER TICKER)
+    foot_y = h - 70
+    draw.line([(80, foot_y), (w - 80, foot_y)], fill=(pal.border_color[0], pal.border_color[1], pal.border_color[2], 90), width=1)
+    
+    footer_text = f"TWITCH / KICK: @{channel_name}   •   YOUTUBE: @{channel_name}   •   DİSCORD TOPLULUĞUMUZA KATILIN"
+    f_box = draw.textbbox((0, 0), footer_text, font=get_system_font("arial.ttf", 15))
+    draw.text(((w - (f_box[2] - f_box[0])) // 2, foot_y + 22), footer_text, font=get_system_font("arial.ttf", 15), fill=pal.text_sub)
 
     out_dir = get_appdata_obs_assets_dir()
     clean_name = "".join(c for c in channel_name if c.isalnum() or c in ("_", "-"))
@@ -761,52 +507,73 @@ def generate_channel_banner(channel_name: str = "Ripleytia",
 
 
 # ==============================================================================
-# 9. DİNAMİK ŞEFFAF WEBCAM ÇERÇEVESİ (KOMPOZİSYONA GÖRE YERLEŞEN 1920x1080)
+# 5. ÇOK KATMANLI ŞEFFAF WEBCAM ÇERÇEVESİ (1920x1080)
 # ==============================================================================
 
-def generate_webcam_overlay(channel_name: str = "Ripleytia", spec: Optional[RadicalDesignSpec] = None) -> str:
-    if spec is None:
-        spec = _mutator_instance.derive_radical_design()
+def generate_webcam_overlay(channel_name: str = "Ripleytia", plan: Optional[MasterDesignPlan] = None) -> str:
+    if plan is None:
+        plan = _mutator.generate_plan()
 
     w, h = 1920, 1080
+    pal = plan.palette
+    trend = plan.trend
+
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    palette = spec.palette
-    physics = spec.movement_physics
-    box = spec.layout.webcam_box
+    cam_x, cam_y = 1360, 60
+    cam_w, cam_h = 490, 276
 
-    # Radikal Kompozisyondan Piksel Koordinatlarına Dönüştürme
-    cam_x = int(box.x * w)
-    cam_y = int(box.y * h)
-    cam_w = int(box.width * w)
-    cam_h = int(box.height * h)
+    if trend == ArtDirectionTrend.ESPORTS_AGGRESSIVE:
+        # Espor Açılı Kamera Çerçevesi
+        draw.rectangle([(cam_x, cam_y), (cam_x + cam_w, cam_y + cam_h)], outline=pal.neon_primary, width=3)
+        # 4 Köşede Agresif Çapraz Köşebentler
+        k = 40
+        for px, py in [(cam_x, cam_y), (cam_x + cam_w, cam_y), (cam_x, cam_y + cam_h), (cam_x + cam_w, cam_y + cam_h)]:
+            dx = 1 if px == cam_x else -1
+            dy = 1 if py == cam_y else -1
+            draw.line([(px, py), (px + dx * k, py)], fill=pal.neon_accent, width=5)
+            draw.line([(px, py), (px, py + dy * k)], fill=pal.neon_accent, width=5)
+        # Alt Paralelkenar İsim Rozeti
+        slant = 20
+        badge_y = cam_y + cam_h
+        draw.polygon([(cam_x + slant, badge_y), (cam_x + cam_w, badge_y), (cam_x + cam_w - slant, badge_y + 36), (cam_x, badge_y + 36)], fill=(16, 12, 24, 240), outline=pal.neon_primary, width=2)
+        draw.text((cam_x + 28, badge_y + 8), f"🔴 {channel_name.upper()}", font=get_system_font("impact.ttf", 16), fill=pal.text_main)
+        draw.text((cam_x + cam_w - 95, badge_y + 8), "60 FPS", font=get_system_font("impact.ttf", 15), fill=pal.neon_accent)
 
-    # Çerçeveyi Sanat Akımına Göre Çiz
-    draw_cornered_box(
-        draw, (cam_x, cam_y, cam_w, cam_h),
-        corner_style=physics.corner_style,
-        fill_color=(0, 0, 0, 0), # Şeffaf kamera penceresi
-        outline_color=palette.neon_primary,
-        border_width=physics.border_width,
-        shadow_type=physics.shadow_type,
-        shadow_offset=physics.shadow_offset
-    )
+    elif trend == ArtDirectionTrend.BOLD_BRUTALISM:
+        # Sert Ofset Gölgeli Kalın Brutalist Çerçeve
+        draw.rectangle([(cam_x + 8, cam_y + 8), (cam_x + cam_w + 8, cam_y + cam_h + 8)], fill=(0, 0, 0, 220))
+        draw.rectangle([(cam_x, cam_y), (cam_x + cam_w, cam_y + cam_h)], outline=pal.border_color, width=5)
+        # Üst Etiket
+        draw.rectangle([(cam_x, cam_y - 28), (cam_x + 180, cam_y)], fill=pal.border_color)
+        draw.text((cam_x + 14, cam_y - 24), "CAM 01 // LIVE", font=get_system_font("consola.ttf", 14), fill=pal.neon_primary)
+        # Alt İsim
+        draw.rectangle([(cam_x, cam_y + cam_h), (cam_x + cam_w, cam_y + cam_h + 32)], fill=pal.border_color)
+        draw.text((cam_x + 14, cam_y + cam_h + 6), f">> {channel_name.upper()}", font=get_system_font("impact.ttf", 16), fill=(255, 255, 255, 255))
 
-    # İsim Plakası ve Dekoratif Etiketler
-    badge_h = 34
-    draw_cornered_box(
-        draw, (cam_x, cam_y + cam_h, cam_w, badge_h),
-        corner_style="sharp" if physics.corner_style == "sharp" else "rounded",
-        fill_color=(14, 12, 22, int(255 * physics.box_opacity)),
-        outline_color=palette.border_color,
-        border_width=max(1, physics.border_width - 1),
-        shadow_type="none"
-    )
+    elif trend == ArtDirectionTrend.TECH_FUTURE_HUD:
+        # 45 Derece Chamfer Kesimli Siber Çerçeve
+        c = 20
+        pts = [
+            (cam_x + c, cam_y), (cam_x + cam_w - c, cam_y),
+            (cam_x + cam_w, cam_y + c), (cam_x + cam_w, cam_y + cam_h - c),
+            (cam_x + cam_w - c, cam_y + cam_h), (cam_x + c, cam_y + cam_h),
+            (cam_x, cam_y + cam_h - c), (cam_x, cam_y + c)
+        ]
+        draw.polygon(pts, outline=pal.neon_primary, width=3)
+        # Telemetri
+        draw.text((cam_x + 10, cam_y - 22), f"OPTICAL_FEED // {channel_name.upper()}", font=get_system_font("consola.ttf", 13), fill=pal.neon_accent)
+        draw.text((cam_x + cam_w - 110, cam_y - 22), "1080P // LOCK", font=get_system_font("consola.ttf", 13), fill=pal.neon_primary)
 
-    badge_font = get_font_by_category(spec.typography.body_category, size=14, bold=True)
-    draw.text((cam_x + 14, cam_y + cam_h + 8), f"🔴 {channel_name.upper()}", font=badge_font, fill=palette.text_main)
-    draw.text((cam_x + cam_w - 95, cam_y + cam_h + 8), f"60 FPS HD", font=badge_font, fill=palette.neon_accent)
+    else: # PREMIUM_STREAM
+        # Lüks Frosted Glass Çerçeve
+        draw.rounded_rectangle([(cam_x - 3, cam_y - 3), (cam_x + cam_w + 3, cam_y + cam_h + 3)], radius=16, outline=(pal.neon_primary[0], pal.neon_primary[1], pal.neon_primary[2], 90), width=4)
+        draw.rounded_rectangle([(cam_x, cam_y), (cam_x + cam_w, cam_y + cam_h)], radius=14, outline=pal.neon_primary, width=2)
+        # Alt Zarif İsim Plakası
+        draw.rounded_rectangle([(cam_x, cam_y + cam_h + 6), (cam_x + cam_w, cam_y + cam_h + 40)], radius=10, fill=(20, 16, 36, 230), outline=pal.neon_primary, width=1)
+        draw.ellipse([(cam_x + 18, cam_y + cam_h + 17), (cam_x + 28, cam_y + cam_h + 27)], fill=(239, 68, 68, 255))
+        draw.text((cam_x + 36, cam_y + cam_h + 12), f"LIVE • {channel_name.upper()}", font=get_system_font("arialbd.ttf", 13), fill=pal.text_main)
 
     out_dir = get_appdata_obs_assets_dir()
     clean_name = "".join(c for c in channel_name if c.isalnum() or c in ("_", "-"))
@@ -816,50 +583,55 @@ def generate_webcam_overlay(channel_name: str = "Ripleytia", spec: Optional[Radi
 
 
 # ==============================================================================
-# 10. DİNAMİK ŞEFFAF SOHBET KUTUSU (KOMPOZİSYONA GÖRE YERLEŞEN 1920x1080)
+# 6. ÇOK KATMANLI ŞEFFAF SOHBET KUTUSU (1920x1080)
 # ==============================================================================
 
-def generate_chat_overlay(channel_name: str = "Ripleytia", spec: Optional[RadicalDesignSpec] = None) -> str:
-    if spec is None:
-        spec = _mutator_instance.derive_radical_design()
+def generate_chat_overlay(channel_name: str = "Ripleytia", plan: Optional[MasterDesignPlan] = None) -> str:
+    if plan is None:
+        plan = _mutator.generate_plan()
 
     w, h = 1920, 1080
+    pal = plan.palette
+    trend = plan.trend
+
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    palette = spec.palette
-    physics = spec.movement_physics
-    box = spec.layout.chat_box
+    cx, cy = 60, 360
+    cw, ch = 440, 650
 
-    chat_x = int(box.x * w)
-    chat_y = int(box.y * h)
-    chat_w = int(box.width * w)
-    chat_h = int(box.height * h)
+    if trend == ArtDirectionTrend.ESPORTS_AGGRESSIVE:
+        # Açılı Espor Başlık Şeridi
+        slant = 18
+        draw.rectangle([(cx, cy + 42), (cx + cw, cy + ch)], fill=(14, 10, 22, 160), outline=pal.neon_primary, width=2)
+        draw.polygon([(cx + slant, cy), (cx + cw, cy), (cx + cw - slant, cy + 42), (cx, cy + 42)], fill=pal.neon_primary)
+        draw.text((cx + 25, cy + 10), f"💬 CANLI SOHBET // {channel_name.upper()}", font=get_system_font("impact.ttf", 16), fill=(10, 8, 16, 255))
+        
+    elif trend == ArtDirectionTrend.BOLD_BRUTALISM:
+        # Kalın Brutalist Kutu ve Başlık
+        draw.rectangle([(cx + 6, cy + 6), (cx + cw + 6, cy + ch + 6)], fill=(0, 0, 0, 210))
+        draw.rectangle([(cx, cy), (cx + cw, cy + ch)], fill=(18, 18, 22, 190), outline=pal.border_color, width=4)
+        draw.rectangle([(cx, cy), (cx + cw, cy + 40)], fill=pal.border_color)
+        draw.text((cx + 16, cy + 10), f"[ CHAT FEED // @{channel_name.upper()} ]", font=get_system_font("consola.ttf", 15), fill=pal.neon_primary)
 
-    body_opacity = int(255 * physics.box_opacity * 0.70)
-    draw_cornered_box(
-        draw, (chat_x, chat_y, chat_w, chat_h),
-        corner_style=physics.corner_style,
-        fill_color=(12, 10, 20, body_opacity),
-        outline_color=palette.border_color,
-        border_width=physics.border_width,
-        shadow_type=physics.shadow_type,
-        shadow_offset=physics.shadow_offset
-    )
+    elif trend == ArtDirectionTrend.TECH_FUTURE_HUD:
+        # Siber Chamfer Kutu
+        c = 16
+        pts = [
+            (cx + c, cy), (cx + cw - c, cy),
+            (cx + cw, cy + c), (cx + cw, cy + ch - c),
+            (cx + cw - c, cy + ch), (cx + c, cy + ch),
+            (cx, cy + ch - c), (cx, cy + c)
+        ]
+        draw.polygon(pts, fill=(10, 16, 32, 175), outline=pal.neon_primary, width=2)
+        draw.line([(cx + c, cy + 40), (cx + cw - c, cy + 40)], fill=pal.neon_primary, width=2)
+        draw.text((cx + 18, cy + 12), f"SYS.CHAT // STREAM FEED", font=get_system_font("consola.ttf", 14), fill=pal.neon_accent)
 
-    # Başlık Şeridi
-    header_h = 38
-    draw_cornered_box(
-        draw, (chat_x, chat_y, chat_w, header_h),
-        corner_style=physics.corner_style,
-        fill_color=(palette.bg_start[0], palette.bg_start[1], palette.bg_start[2], 230),
-        outline_color=palette.border_color,
-        border_width=physics.border_width,
-        shadow_type="none"
-    )
-
-    head_font = get_font_by_category(spec.typography.header_category, size=14, bold=True)
-    draw.text((chat_x + 14, chat_y + 10), f"💬 CHAT • @{channel_name}", font=head_font, fill=palette.text_main)
+    else: # PREMIUM_STREAM
+        # Lüks Frosted Glass Gövde
+        draw.rounded_rectangle([(cx, cy), (cx + cw, cy + ch)], radius=16, fill=(20, 16, 36, 170), outline=pal.neon_primary, width=2)
+        draw.rounded_rectangle([(cx, cy), (cx + cw, cy + 44)], radius=14, fill=(pal.bg_start[0], pal.bg_start[1], pal.bg_start[2], 230), outline=pal.neon_secondary, width=1)
+        draw.text((cx + 20, cy + 12), f"💬 Canlı Sohbet • @{channel_name}", font=get_system_font("arialbd.ttf", 14), fill=pal.text_main)
 
     out_dir = get_appdata_obs_assets_dir()
     clean_name = "".join(c for c in channel_name if c.isalnum() or c in ("_", "-"))
@@ -869,44 +641,60 @@ def generate_chat_overlay(channel_name: str = "Ripleytia", spec: Optional[Radica
 
 
 # ==============================================================================
-# 11. DİNAMİK ETKİNLİK ŞERİDİ (EVENT TICKER 1920x1080)
+# 7. ÇOK KATMANLI SEGMENTLİ ETKİNLİK ŞERİDİ (EVENT TICKER 1920x1080)
 # ==============================================================================
 
-def generate_event_ticker(channel_name: str = "Ripleytia", spec: Optional[RadicalDesignSpec] = None) -> str:
-    if spec is None:
-        spec = _mutator_instance.derive_radical_design()
+def generate_event_ticker(channel_name: str = "Ripleytia", plan: Optional[MasterDesignPlan] = None) -> str:
+    if plan is None:
+        plan = _mutator.generate_plan()
 
     w, h = 1920, 1080
+    pal = plan.palette
+    trend = plan.trend
+
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    palette = spec.palette
-    physics = spec.movement_physics
-    box = spec.layout.ticker_box
+    tx, ty = 140, 20
+    tw, th = 1640, 52
 
-    tx = int(box.x * w)
-    ty = int(box.y * h)
-    tw = int(box.width * w)
-    th = int(box.height * h)
+    # 3 Ayrı Bağımsız Lüks Modül Çizimi (Segmented Cards)
+    card_w = (tw - 40) // 3
+    
+    modules = [
+        ("⭐ SON TAKİPÇİ", "Topluluk Üyesi", pal.neon_primary),
+        ("💎 SON ABONE", "VIP Destekçi", pal.neon_secondary),
+        ("🎯 HEDEF", "%85 (850/1000)", pal.neon_accent)
+    ]
 
-    draw_cornered_box(
-        draw, (tx, ty, tw, th),
-        corner_style=physics.corner_style,
-        fill_color=(12, 10, 22, int(255 * physics.box_opacity)),
-        outline_color=palette.border_color,
-        border_width=physics.border_width,
-        shadow_type=physics.shadow_type,
-        shadow_offset=(3, 3)
-    )
+    for i, (title, val, color) in enumerate(modules):
+        mx = tx + i * (card_w + 20)
+        
+        if trend == ArtDirectionTrend.ESPORTS_AGGRESSIVE:
+            slant = 14
+            poly = [(mx + slant, ty), (mx + card_w, ty), (mx + card_w - slant, ty + th), (mx, ty + th)]
+            draw.polygon(poly, fill=(16, 12, 24, 235), outline=color, width=2)
+            draw.text((mx + 22, ty + 15), title, font=get_system_font("impact.ttf", 15), fill=color)
+            draw.text((mx + 155, ty + 15), val, font=get_system_font("arialbd.ttf", 14), fill=pal.text_main)
+            
+        elif trend == ArtDirectionTrend.BOLD_BRUTALISM:
+            draw.rectangle([(mx + 4, ty + 4), (mx + card_w + 4, ty + th + 4)], fill=(0, 0, 0, 220))
+            draw.rectangle([(mx, ty), (mx + card_w, ty + th)], fill=(20, 20, 24, 240), outline=color, width=3)
+            draw.text((mx + 16, ty + 15), title, font=get_system_font("consola.ttf", 14), fill=color)
+            draw.text((mx + 150, ty + 15), val, font=get_system_font("impact.ttf", 16), fill=(255, 255, 255, 255))
 
-    font_t = get_font_by_category(spec.typography.body_category, size=13, bold=True)
-    font_v = get_font_by_category("swiss", size=13, bold=False)
+        else: # TECH & PREMIUM
+            draw.rounded_rectangle([(mx, ty), (mx + card_w, ty + th)], radius=12, fill=(18, 14, 30, 225), outline=color, width=2)
+            draw.text((mx + 18, ty + 16), title, font=get_system_font("arialbd.ttf", 13), fill=color)
+            draw.text((mx + 145, ty + 16), val, font=get_system_font("arial.ttf", 14), fill=pal.text_main)
 
-    draw.text((tx + 20, ty + (th // 2 - 9)), "⭐ SON TAKİPÇİ:", font=font_t, fill=palette.neon_secondary)
-    draw.text((tx + 145, ty + (th // 2 - 9)), "Topluluk Üyesi", font=font_v, fill=palette.text_main)
-
-    draw.text((tx + tw // 2, ty + (th // 2 - 9)), "💎 SON ABONE:", font=font_t, fill=palette.neon_accent)
-    draw.text((tx + tw // 2 + 125, ty + (th // 2 - 9)), "VIP Destekçi", font=font_v, fill=palette.text_main)
+        # Hedef Modülü için Canlı İlerleme Çubuğu (Mini Progress Bar)
+        if i == 2:
+            bar_x = mx + 260
+            bar_y = ty + 18
+            bar_w = card_w - 280
+            draw.rounded_rectangle([(bar_x, bar_y), (bar_x + bar_w, bar_y + 14)], radius=7, fill=(35, 30, 50, 255))
+            draw.rounded_rectangle([(bar_x, bar_y), (bar_x + int(bar_w * 0.85), bar_y + 14)], radius=7, fill=color)
 
     out_dir = get_appdata_obs_assets_dir()
     clean_name = "".join(c for c in channel_name if c.isalnum() or c in ("_", "-"))
@@ -916,30 +704,27 @@ def generate_event_ticker(channel_name: str = "Ripleytia", spec: Optional[Radica
 
 
 # ==============================================================================
-# 12. OBS SAHNE KOLEKSİYONU OLUŞTURUCUSU
+# 8. OBS SAHNE KOLEKSİYONU PAKETLEYİCİSİ
 # ==============================================================================
 
 def build_ai_scene_collection(channel_name: str = "Ripleytia", 
-                              theme_name: str = "🎲 Tamamen Rastgele (Radikal Mutasyon & Anti-Repetition)", 
+                              theme_name: str = "🎲 Tamamen Rastgele (Profesyonel Yayıncı Trendleri)", 
                               collection_name: Optional[str] = None, 
                               custom_color_query: str = "") -> Dict[str, Any]:
-    """
-    Radikal tasarım mutasyonunu çalıştırır, 6 varlığı üretir ve OBS JSON koleksiyonunu yazar.
-    """
-    spec = _mutator_instance.derive_radical_design(preset_theme=theme_name, color_query=custom_color_query)
+    plan = _mutator.generate_plan(requested_trend=theme_name, query=custom_color_query)
 
-    start_banner = generate_channel_banner(channel_name=channel_name, spec=spec, mode="starting")
-    brb_banner = generate_channel_banner(channel_name=channel_name, spec=spec, mode="brb")
-    end_banner = generate_channel_banner(channel_name=channel_name, spec=spec, mode="ending")
-    webcam_overlay = generate_webcam_overlay(channel_name=channel_name, spec=spec)
-    chat_overlay = generate_chat_overlay(channel_name=channel_name, spec=spec)
-    ticker_overlay = generate_event_ticker(channel_name=channel_name, spec=spec)
+    start_banner = generate_channel_banner(channel_name=channel_name, plan=plan, mode="starting")
+    brb_banner = generate_channel_banner(channel_name=channel_name, plan=plan, mode="brb")
+    end_banner = generate_channel_banner(channel_name=channel_name, plan=plan, mode="ending")
+    webcam_overlay = generate_webcam_overlay(channel_name=channel_name, plan=plan)
+    chat_overlay = generate_chat_overlay(channel_name=channel_name, plan=plan)
+    ticker_overlay = generate_event_ticker(channel_name=channel_name, plan=plan)
 
     appdata = os.environ.get("APPDATA", "")
     scenes_dir = os.path.join(appdata, "obs-studio", "basic", "scenes")
     os.makedirs(scenes_dir, exist_ok=True)
 
-    c_name = collection_name or f"Ripleytia AI - {channel_name} ({spec.design_id})"
+    c_name = collection_name or f"Ripleytia Pro AI - {channel_name} ({plan.design_id})"
     safe_name = "".join(c for c in c_name if c.isalnum() or c in (" ", "_", "-")).strip()
     filepath = os.path.join(scenes_dir, f"{safe_name}.json")
 
@@ -1096,7 +881,7 @@ def build_ai_scene_collection(channel_name: str = "Ripleytia",
         "success": True,
         "collection_name": c_name,
         "filepath": filepath,
-        "spec": spec,
+        "plan": plan,
         "assets": {
             "start_banner": start_banner,
             "brb_banner": brb_banner,

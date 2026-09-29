@@ -1,4 +1,4 @@
-# 🎥 Ripleytia OBS AI Studio (v1.3.0 Güncel Versiyon)
+# 🎥 Ripleytia OBS AI Studio (v1.4.0 Güncel Versiyon)
 
 <p align="center">
   <img src="assets/logo.png" width="160" alt="Ripleytia Logo" />
@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Canlı Yayıncılar ve Rekabetçi Espor Oyuncuları İçin Yapay Zeka Destekli OBS Studio & Sahne/Overlay Stüdyosu</b><br>
-  <i>Radikal Düzen Mutasyonu • 6 Sanat Akımı • Tipografi Çiftleri • Katı Geçmiş Kontrolü (Zero Repetition) • RNNoise AI Filtresi</i>
+  <i>Çok Katmanlı Espor Geometrisi • Shroud & VCT Kalitesinde Paneller • 4 Profesyonel Yayıncı Trendi • Katı Anti-Repetition Havuzu</i>
 </p>
 
 <p align="center">
@@ -14,46 +14,43 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-blueviolet?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/UI-CustomTkinter-blueviolet?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Anti--Cheat-100%25%20Uyumlu%20(Safe)-brightgreen?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Sürüm-v1.3.0%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Sürüm-v1.4.0%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
 </p>
 
 ---
 
 ## 📖 Genel Bakış
 
-**Ripleytia OBS AI Studio (v1.3.0)**, yayıncıların overlay tasarımlarında karşılaştığı "aynı şablonun sadece renkleri değişmiş" sorununu kökten çözen **Radikal Prosedürel Tasarım & Genetik Mutasyon Motoruna** sahiptir.
+**Ripleytia OBS AI Studio (v1.4.0)**, amatör ve düz metin odaklı tasarımları geride bırakarak espor turnuvaları ve ünlü profesyonel yayıncıların (Shroud, Ninja, xQc) kalitesinde **Çok Katmanlı Şekil Geometrisi (Layered Geometry)** ve **Profesyonel Yayıncı Panelleri** üreten yeni nesil grafik motoruna sahiptir.
 
-Yalnızca renkleri değil; **ekran yerleşim planını (layout)**, **sanat akımını (Art Movement)**, **geometrik köşe ve kenar fiziğini**, **tipografi eşleşmelerini (font pairings)** ve **gölge/opaklık derinliğini** her tıklamada baştan aşağı değiştirir. Üretilen her tasarım geçmiş hafızasında taranır ve son tasarımlarla **%80'den fazla uyuşan kombinasyonlar anında reddedilerek** yerine yepyeni bir varyasyon üretilir.
+Yalnızca renkleri ve metni değil; **arka plan hız şeritlerini**, **metin arkasındaki zırhlı ve açılı paralelkenar/brutalist panelleri**, **hazard ikaz şeritlerini (`///`)**, **dinamik ses dalgası equalizer çubuklarını** ve **3 segmentli espor etkinlik barını** her tıklamada sıfırdan kurar.
 
 ---
 
-## 🚀 Sürüm 1.3.0 ile Gelen Radikal Yenilikler
+## 🚀 Sürüm 1.4.0 ile Gelen Profesyonel Yenilikler
 
-### 1. 📐 Radikal Düzen ve Kompozisyon Değişimi (Dynamic Layout Mutation)
-Kamera çerçevesi, sohbet kutusu ve etkinlik şeritleri artık sabit bir gridde durmaz; her üretimde ekranın tamamen farklı bölgelerine konuşlanır:
-* **`left_vertical_monolith`**: Ekranın sol sütununa dikey olarak kilitlenen monolitik profesyonel düzen.
-* **`bottom_horizontal_dock`**: Ekranın altını saran geniş bilgi dock'u ve sağ alt kamera.
-* **`asymmetric_split_diagonal`**: Zikzak ve dinamik espor akışlı asimetrik köşe düzeni.
-* **`frameless_decentralized_hud`**: Sıfır çerçeveli, yalnızca telemetri ve şeffaf etiketlerden oluşan modern HUD.
-* **`corner_pinned_compact`**: Ekranın 4 köşesine zarifçe iliştirilmiş minimal modüller.
-* **`brutalist_stacked_cards`**: Sağ tarafta üst üste yığılmış kalın, ağır endüstriyel kartlar.
+### 1. 🛡️ Çok Katmanlı Şekil Geometrisi ve Hero Paneller (Layered Geometry)
+Artık düz bir arka plan üzerine metin yerleştirilmez! Metinlerin arkasına ve sahnenin merkezine devasa, çok katmanlı profesyonel paneller çizilir:
+* **Espor Paralelkenar Plakaları:** 25°-35° açılı zırhlı metalik gövde, parlak neon dış çerçeve, sol kenarda renkli hazard ikaz çizgileri ve sağda ses frekans çubukları.
+* **Brutalist Kalın Bloklar:** 90° açılı sert gövde, 14px kalınlığında simsiyah ofset blok gölge, endüstriyel üst etiket şeridi ve barkodlar.
+* **Siberpunk HUD Panelleri:** 45° chamfer pah kesimli siber cam panel, telemetri satırları, köşe vidaları ve reticle hedefleme işaretleri.
+* **Lüks Buzlu Cam (Glassmorphism):** 24px yuvarlatılmış yarı saydam gövde, difüze neon ortam ışıması, altın/kırmızı canlı yayın hap rozetleri.
 
-### 2. 🏛️ 6 Farklı Sanat Akımı ve Görsel Fizik (Art Movements)
-Her tasarım isteğine baskın bir tasarım felsefesi atanır:
-* **Cyberpunk HUD & High-Tech:** 45° pah (chamfer) kırılmış köşeler, çok katmanlı neon ışıma, telemetri koordinatları ve köşebentler.
-* **Neo-Brutalism & Industrial Raw:** 4px kalınlığında sert siyah kenarlıklar, 8x8 offset blok gölgeler, dev arka plan rakamları.
-* **Swiss International & Clean Grid:** 1px hassas çizgiler, matematiksel sütun kılavuzları, sıfır gölge ve mükemmel asimetrik boşluk dengesi.
-* **Minimal Architectural & Fine Line:** Zarif yuvarlatılmış köşeler, %45 şeffaf buzlu cam dokusu ve saç teli inceliğinde çizgiler.
-* **Y2K Acid & Retro-Futurism:** Yuvarlak hap (pill) formları, kromik rozetler ve retro-fütüristik estetik.
-* **Dark Esports Mecha:** Agresif espor kesimleri, 15° eğimli zırh şeritleri ve tehlike ikaz detayları.
+### 2. 🎮 4 Profesyonel Yayıncı Tasarım Trendi
+* **🔥 ESPOR / AGRESİF (Valorant Champions / VCT):** Agresif açılar, kalın espor fontları, turnuva rozetleri ve canlı neon aksanlar.
+* **⬛ BOLD BRUTALISM (Endüstriyel & Devasa Tipografi):** Ekranı kaplayan devasa watermark yazılar, yüksek kontrastlı kalın etiketler ve siyah-sarı/kırmızı şeritler.
+* **⚡ TECH / MINIMALIST FUTURE (Cyberpunk HUD):** Holografik veri tabanı arayüzü, audio visualizer çubukları, telemetri koordinatları ve siber ızgara.
+* **💎 PREMIUM STREAM (Modern Lüks & Glassmorphism):** Yumuşak ambient neon küreler, lüks cam efektleri ve asil tipografi.
 
-### 3. ✍️ Tipografi ve Font Çeşitliliği (Typography Mutation)
-* **Zıt Karakterli Font Çiftleri:** Başlıklar ve alt metinler için kontrast oluşturan ikili font eşleşmeleri (`display_heavy`, `monospace`, `swiss`, `geometric`, `serif`).
-* **Harf Aralığı & Ağırlık Fiziği:** Negatif harf aralığından (Swiss tracking -1px) ultra geniş siber aralıklara (+6px) ve Black 900 ağırlığına kadar dinamik tipografi.
+### 3. 📊 3 Segmentli Modüler Espor Etkinlik Barı (Event Ticker)
+Düz dikdörtgenler yerine 3 bağımsız modüle bölünmüş profesyonel şerit:
+* **⭐ SON TAKİPÇİ:** Topluluk üyesi için özel çerçeve.
+* **💎 SON ABONE:** VIP destekçi için neon rozet.
+* **🎯 BAĞIŞ HEDEFİ:** İçinde doğrudan çizilmiş canlı degrade ilerleme çubuğu (%85 doluluk).
 
-### 4. 🛡️ Katı Geçmiş Kontrolü (Hard Unique Design Cache)
-* Üretilen her tasarımın yapısal şeması (`Arketip + Akım + Font Çifti + Köşe Geometrisi`) vektör olarak bellekte saklanır.
-* Son 15 tasarımla **%80'den fazla benzerlik gösteren hiçbir şema onaylanmaz**, sistem arkada sessizce yeni bir varyasyon mutasyonu işletir.
+### 4. 🧬 Katı Şablon Yasaklaması (Hard Anti-Repetition Cache)
+* Son 15 tasarım hafızada tutulur. Aynı trend veya aynı iskelet şeması üst üste ASLA gelemez!
+* Şablon benzerliği tespit edildiğinde motor anında yeni bir mutasyon türetir.
 
 ---
 
@@ -64,9 +61,9 @@ Uygulama açık kaynak kodludur, hiçbir reklam veya arka plan zararlısı içer
 * **Dosya Adı:** `Ripleytia OBS AI Studio.exe`
 * **SHA-256 Özeti:**
   ```text
-  ef40046c5cd8c8dec305b9e2c2a9ae871a93fbfc5cc5593fde218dcb4e341ad9
+  0c78044997f43ab5d5ccf250bfba0571881f06ff5a10ab7b231c93bf327b4650
   ```
-* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/ef40046c5cd8c8dec305b9e2c2a9ae871a93fbfc5cc5593fde218dcb4e341ad9)
+* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/0c78044997f43ab5d5ccf250bfba0571881f06ff5a10ab7b231c93bf327b4650)
 
 ---
 
@@ -114,7 +111,7 @@ ripleytia-obs-studio/
 │   └── performance_monitor.py # 0 ms gecikmeli CPU, RAM & OBS süreç monitörü
 ├── main.py                 # CustomTkinter 8 sekmeli modern grafik arayüzü
 ├── build_exe.py            # PyInstaller derleme betiği
-├── version_info.txt        # Windows PE binary sürüm bilgisi (v1.3.0)
+├── version_info.txt        # Windows PE binary sürüm bilgisi (v1.4.0)
 ├── .gitignore              # Git yoksayma kuralları
 └── README.md               # Detaylı dokümantasyon
 ```
