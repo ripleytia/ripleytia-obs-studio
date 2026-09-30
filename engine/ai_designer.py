@@ -236,131 +236,209 @@ class DesignHistoryManager:
 
 class ReferenceSearchEngine:
     """
-    Her bileşen türü için güncel espor/stream tasarım trend kelimelerini döndürür.
-    Ağ bağlantısı varsa gerçek arama yapar; yoksa zengin kuratlı havuzdan seçer.
-    Dönen anahtar kelimeler Master Prompt'a kalite katsayısı olarak enjekte edilir.
+    Hyper-Realistic 3D CGI prompt motoru.
+    Her bileşen için:
+      - Sinematik CGI kalite prefix (UE5/Octane/PBR ağırlıklı)
+      - Negatif constraint'ler (flat vector / MS Paint yasaklaması)
+      - SD-style ağırlık katsayıları ((keyword:1.4) formatı)
+      - Hacimsel ışık + materyal dokusu zorunluluğu
     """
 
-    # 3D render kalite prefix'i (her prompt'un başına eklenir)
+    # ---------------------------------------------------------------
+    # A. CGI KALITE PREFİX — Her promptun başına eklenir
+    # ---------------------------------------------------------------
     QUALITY_PREFIX = (
-        "Genuine 3D render, Unreal Engine 5 render style, Blender 3D modeling, "
-        "Octane Render, ray-traced ambient occlusion, metallic beveling, "
-        "volumetric glass reflection, emissive neon hardware, "
-        "hyper-realistic gaming peripheral texture, "
-        "subsurface scattering, physically-based rendering PBR, "
-        "photorealistic esports aesthetic."
+        "(hyper-realistic 3D CGI render:1.5), (Unreal Engine 5 Lumen GI:1.4), "
+        "(Octane Render photorealistic:1.4), (physically-based rendering PBR:1.3), "
+        "(ray-traced ambient occlusion and global illumination:1.4), "
+        "(volumetric fog and atmospheric haze:1.3), "
+        "(metallic anisotropic surface sheen:1.3), "
+        "(subsurface scattering on translucent materials:1.2), "
+        "(anamorphic lens flare from neon light sources:1.3), "
+        "(cinematic depth-of-field bokeh:1.2), "
+        "(8K ultra-high resolution texture detail:1.3), "
+        "(hyper-detailed surface normal maps:1.2), "
+        "professional CGI VFX studio quality, photorealistic esports aesthetic."
     )
 
+    # ---------------------------------------------------------------
+    # B. NEGATİF CONSTRAINT — Her promptun sonuna eklenir
+    # ---------------------------------------------------------------
+    NEGATIVE_PROMPT = (
+        "NEGATIVE: flat vector art, 2D minimalist line art, simple geometric shapes, "
+        "cartoon style, anime, drawing, MS Paint style, aliasing, pixelated, "
+        "low quality render, bad shading, matte surface, plain solid color, "
+        "no texture, amateur design, clip art, illustration, sketch, watercolor, "
+        "low resolution, blurry, washed out colors, overexposed."
+    )
+
+    # ---------------------------------------------------------------
+    # C. MATERYAL DOKUSU ZORUNLULUĞUa — 3D materyal pool
+    # ---------------------------------------------------------------
+    MATERIAL_POOL = [
+        "(brushed titanium alloy surface:1.4), (micro-scratched carbon fiber weave:1.3)",
+        "(dark chrome metal with specular highlights:1.4), (hammered steel texture:1.3)",
+        "(military-grade matte gunmetal with worn edges:1.3), (anodized aluminum:1.2)",
+        "(battle-worn heavy-duty composite armor plate:1.4), (industrial metal grating:1.2)",
+        "(liquid-cooled cyberpunk hardware component:1.3), (etched circuit board traces:1.2)",
+        "(holographic iridescent surface coating:1.3), (plasma-etched reactive surface:1.2)",
+    ]
+
+    # ---------------------------------------------------------------
+    # D. IŞIK KAYNAĞI HAVUZU — Hacimsel ışık + gölge
+    # ---------------------------------------------------------------
+    LIGHTING_POOL = [
+        "(volumetric neon light bleeding into dark environment:1.4), (cinematic rim lighting:1.3)",
+        "(emissive LED neon strips casting colored ambient glow:1.4), (hard shadow depth:1.3)",
+        "(point light source from behind metallic frame:1.3), (dramatic chiaroscuro lighting:1.2)",
+        "(Blade Runner neon-soaked atmosphere:1.3), (cyberpunk city glow bounce light:1.2)",
+        "(championship stage LED array lighting:1.3), (holographic projection glow:1.2)",
+        "(deep space ambient with single neon spotlight:1.3), (studio key + fill lighting:1.2)",
+    ]
+
+    # ---------------------------------------------------------------
+    # E. AÇILIŞ EKRANI REF HAVUZU
+    # ---------------------------------------------------------------
     OPENING_REFS = [
-        "Stream Starting Soon Premium 3D Esports Screen 2024",
-        "Valorant Champions VCT Stage Style broadcast cinematic",
-        "Riot Games Official HUD Layout dark premium",
-        "3D Beveled Glossy Carbon fiber esports intro screen",
-        "CS2 Major Championship broadcast opener",
-        "League of Legends Worlds 2024 stage design aesthetic",
-        "Apex Legends ALGS Championship overlay premium",
-        "FACEIT Major stream opening cinematic 3D render",
-        "Neon hexagonal esports starting screen with depth",
-        "Pro streamer Shroud Ninja xQc opening cinematic dark theme",
-        "TwitchCon Premium booth backdrop esports metallic",
-        "3D holographic game HUD starting screen volumetric light",
-        "Esports arena LED stage screen graphic 3D rendered",
-        "Cyberpunk game UI loading screen 3D beveled panels",
-        "VCT Partner team stream package opening 3D premium",
+        "(Valorant Champions VCT 2024 broadcast cinematic stage:1.4)",
+        "(Riot Games official HUD dark premium esports title card:1.3)",
+        "(3D beveled chrome metal esports starting screen:1.4)",
+        "(CS2 Major Championship broadcast intro cinematic opener:1.3)",
+        "(League of Legends Worlds 2024 stage design 3D rendered:1.3)",
+        "(Cyberpunk 2077 loading screen 3D beveled UI panels:1.3)",
+        "(heavy extruded chrome metal typography esports title:1.4)",
+        "(volumetric fog filled dark arena stage broadcast:1.3)",
+        "(3D holographic game HUD starting screen neon depth:1.4)",
+        "(FACEIT Major stream opening Blender cinematic 3D:1.3)",
+        "(dramatic 3D scene: glowing neon borders bleeding ambient light:1.4)",
+        "(Apex Legends ALGS Championship premium overlay 3D render:1.3)",
     ]
 
+    # ---------------------------------------------------------------
+    # F. WEBCAM ÇERÇEVESİ REF HAVUZU
+    # ---------------------------------------------------------------
     WEBCAM_REFS = [
-        "Esports Webcam Overlay Transparent Border 3D hexagon neon 2024",
-        "Gaming stream cam frame transparent PNG corner bracket metallic",
-        "Valorant transparent webcam border overlay espor pro",
-        "OBS webcam frame transparent PNG neon glow corner beveled",
-        "Twitch partner cam overlay transparent 3D carbon fiber frame",
-        "L-bracket corner cam frame neon esports transparent",
-        "Pro streamer webcam border overlay transparent alpha PNG",
-        "Championship stream cam frame hexagonal 3D metallic transparent",
-        "Holographic cam border overlay transparent neon glow",
-        "Cyberpunk transparent webcam frame overlay UE5 render style",
+        "(3D hardware component webcam overlay futuristic cyberware frame:1.5)",
+        "(brushed titanium L-bracket corner frame with emissive neon LED strips:1.4)",
+        "(battle-damaged grunge metallic esports HUD webcam border:1.4)",
+        "(ray-traced reflections on metallic corner bracket frame:1.3)",
+        "(transparent center, outer 3D beveled chamfered metal corners only:1.5)",
+        "(cyberpunk camera frame overlay heavy chrome carbon fiber:1.4)",
+        "(military tactical HUD webcam overlay brushed steel:1.3)",
+        "(VCT official stream webcam border overlay 3D chrome:1.4)",
+        "(emissive plasma neon corner frame holographic depth:1.3)",
     ]
 
+    # ---------------------------------------------------------------
+    # G. CHAT KUTUSU REF HAVUZU
+    # ---------------------------------------------------------------
     CHAT_REFS = [
-        "Twitch Transparent Chat Box Frame Stream Element 3D 2024",
-        "Streaming chat overlay transparent border neon glassmorphism",
-        "OBS chat box frame transparent PNG 3D metallic border",
-        "Esports chat widget transparent background neon corner",
-        "StreamElements chat overlay transparent alpha 3D frame",
-        "Chat box transparent PNG vertical neon border espor pro",
-        "Valorant UI style transparent chat box overlay frame",
-        "Premium stream chat frame transparent 3D beveled border",
-        "Dark transparent chat box neon glow border stream widget",
-        "Pro streamer transparent chat overlay carbon frame",
+        "(3D beveled cyberpunk chat box frame brushed titanium border:1.4)",
+        "(transparent chat overlay emissive neon LED border strips:1.4)",
+        "(futuristic HUD chat window frame holographic glass panel:1.3)",
+        "(heavy chrome metal chat frame with volumetric glow bleeding:1.4)",
+        "(transparent center chat box only outer battle-worn metal frame visible:1.5)",
+        "(Valorant UI style transparent chat overlay 3D frame carbon:1.3)",
+        "(esports premium stream chat overlay brushed anodized aluminum:1.3)",
+        "(dark cyber chat box frame neon emissive strip header panel:1.4)",
     ]
 
-    VFX_QUALIFIERS = [
-        "ultra-high definition",
-        "8K texture detail",
-        "cinematic depth of field",
-        "HDR neon emission",
-        "metallic anisotropic sheen",
-        "carbon fiber weave micro-detail",
-        "holographic iridescent surface",
-        "plasma energy discharge glow",
-        "military-grade angular design",
-        "championship trophy finish",
+    # ---------------------------------------------------------------
+    # H. VFX AĞIRLIK HAVUZU
+    # ---------------------------------------------------------------
+    VFX_WEIGHTED = [
+        "(hyper-detailed surface micro-scratches:1.3)",
+        "(cinematic anamorphic lens flare:1.3)",
+        "(HDR neon light emission bloom:1.4)",
+        "(volumetric light shaft god rays:1.3)",
+        "(metallic specular highlight hotspot:1.3)",
+        "(photorealistic shadow casting:1.3)",
+        "(championship trophy gold finish:1.2)",
+        "(plasma energy discharge glow pulse:1.3)",
+        "(deep space background ambient darkness:1.2)",
+        "(heavy ambient occlusion in crevices:1.3)",
     ]
 
     @classmethod
-    def get_opening_keywords(cls, rng: random.Random) -> List[str]:
-        return rng.sample(cls.OPENING_REFS, min(4, len(cls.OPENING_REFS)))
-
-    @classmethod
-    def get_webcam_keywords(cls, rng: random.Random) -> List[str]:
-        return rng.sample(cls.WEBCAM_REFS, min(3, len(cls.WEBCAM_REFS)))
-
-    @classmethod
-    def get_chat_keywords(cls, rng: random.Random) -> List[str]:
-        return rng.sample(cls.CHAT_REFS, min(3, len(cls.CHAT_REFS)))
-
-    @classmethod
-    def get_vfx_qualifiers(cls, rng: random.Random, count: int = 3) -> List[str]:
-        return rng.sample(cls.VFX_QUALIFIERS, min(count, len(cls.VFX_QUALIFIERS)))
+    def _pick(cls, pool, rng, n):
+        return rng.sample(pool, min(n, len(pool)))
 
     @classmethod
     def build_opening_prompt(cls, channel_name: str, palette_name: str, rng: random.Random) -> str:
-        refs = cls.get_opening_keywords(rng)
-        vfx  = cls.get_vfx_qualifiers(rng, 3)
+        mat     = cls._pick(cls.MATERIAL_POOL, rng, 2)
+        light   = cls._pick(cls.LIGHTING_POOL, rng, 2)
+        refs    = cls._pick(cls.OPENING_REFS, rng, 3)
+        vfx     = cls._pick(cls.VFX_WEIGHTED, rng, 3)
         return (
             f"{cls.QUALITY_PREFIX} "
-            f"Stream starting screen for '{channel_name}', color palette '{palette_name}', "
-            f"inspired by: {', '.join(refs)}. "
-            f"Visual quality: {', '.join(vfx)}. "
-            f"Full 1920x1080 background, no transparent areas, cinematic 3D composition."
+            f"Cinematic 3D render, photorealistic gaming broadcast starting screen for '{channel_name}', "
+            f"color theme '{palette_name}', "
+            f"central 3D heavy esports title typography extruded in dark chrome metal, "
+            f"glowing neon borders bleeding light into ambient dark background, "
+            f"(rich carbon fiber texture details:1.3), (Octane Render 8K resolution:1.4), "
+            f"material: {', '.join(mat)}, "
+            f"lighting: {', '.join(light)}, "
+            f"reference style: {', '.join(refs)}, "
+            f"VFX: {', '.join(vfx)}. "
+            f"Full 1920x1080, no transparent areas, cinematic 3D composition. "
+            f"{cls.NEGATIVE_PROMPT}"
         )
 
     @classmethod
     def build_webcam_prompt(cls, channel_name: str, palette_name: str, rng: random.Random) -> str:
-        refs = cls.get_webcam_keywords(rng)
-        vfx  = cls.get_vfx_qualifiers(rng, 2)
+        mat     = cls._pick(cls.MATERIAL_POOL, rng, 2)
+        light   = cls._pick(cls.LIGHTING_POOL, rng, 1)
+        refs    = cls._pick(cls.WEBCAM_REFS, rng, 3)
+        vfx     = cls._pick(cls.VFX_WEIGHTED, rng, 2)
         return (
             f"{cls.QUALITY_PREFIX} "
-            f"Webcam frame overlay for '{channel_name}', color '{palette_name}', "
-            f"inspired by: {', '.join(refs)}. "
-            f"CRITICAL CONSTRAINTS: transparent alpha channel, center completely empty, "
-            f"only outer 3D corner frames visible, no background fill, standalone asset PNG. "
-            f"Quality: {', '.join(vfx)}."
+            f"3D hardware component overlay, futuristic cyberpunk cyberware webcam frame for '{channel_name}', "
+            f"color '{palette_name}', "
+            f"(transparent center completely empty:1.6), "
+            f"(outer borders made of brushed titanium and glowing emissive LED neon strips:1.5), "
+            f"(cinematic ray-tracing reflections on metal surfaces:1.4), "
+            f"(heavy battle-damaged grunge details on frame corners:1.3), "
+            f"(premium esports HUD element:1.3), "
+            f"material: {', '.join(mat)}, "
+            f"lighting: {', '.join(light)}, "
+            f"reference: {', '.join(refs)}, "
+            f"VFX: {', '.join(vfx)}. "
+            f"640x480 transparent PNG, alpha=0 center, standalone asset. "
+            f"{cls.NEGATIVE_PROMPT}"
         )
 
     @classmethod
     def build_chat_prompt(cls, channel_name: str, palette_name: str, rng: random.Random) -> str:
-        refs = cls.get_chat_keywords(rng)
-        vfx  = cls.get_vfx_qualifiers(rng, 2)
+        mat     = cls._pick(cls.MATERIAL_POOL, rng, 2)
+        light   = cls._pick(cls.LIGHTING_POOL, rng, 1)
+        refs    = cls._pick(cls.CHAT_REFS, rng, 3)
+        vfx     = cls._pick(cls.VFX_WEIGHTED, rng, 2)
         return (
             f"{cls.QUALITY_PREFIX} "
-            f"Chat box overlay frame for '{channel_name}', color '{palette_name}', "
-            f"inspired by: {', '.join(refs)}. "
-            f"CRITICAL CONSTRAINTS: transparent alpha channel, center completely empty, "
-            f"only 3D border frame and header bar visible, no solid background, "
-            f"standalone transparent PNG asset. Quality: {', '.join(vfx)}."
+            f"3D cyberpunk chat box overlay frame for '{channel_name}', color '{palette_name}', "
+            f"(transparent alpha channel center completely empty:1.6), "
+            f"(only 3D metallic border frame and header bar visible:1.5), "
+            f"(brushed titanium frame with emissive neon strip:1.4), "
+            f"(volumetric glow bleeding from neon border edges:1.4), "
+            f"(no solid background fill — glass transparency:1.5), "
+            f"material: {', '.join(mat)}, "
+            f"lighting: {', '.join(light)}, "
+            f"reference: {', '.join(refs)}, "
+            f"VFX: {', '.join(vfx)}. "
+            f"420x600 transparent PNG, alpha=0 center, standalone asset. "
+            f"{cls.NEGATIVE_PROMPT}"
         )
+
+    # Eski uyumluluk metodları
+    @classmethod
+    def get_opening_keywords(cls, rng): return cls._pick(cls.OPENING_REFS, rng, 4)
+    @classmethod
+    def get_webcam_keywords(cls, rng): return cls._pick(cls.WEBCAM_REFS, rng, 3)
+    @classmethod
+    def get_chat_keywords(cls, rng): return cls._pick(cls.CHAT_REFS, rng, 3)
+    @classmethod
+    def get_vfx_qualifiers(cls, rng, count=3): return cls._pick(cls.VFX_WEIGHTED, rng, count)
+
 
 
 # ==============================================================================
@@ -692,28 +770,93 @@ class EsportsDesignFactory:
 
     def _draw_border_decoration(self, draw, w, h, palette, rng):
         c  = palette.neon_primary
-        draw.rectangle([3,3,w-4,h-4], outline=(c[0],c[1],c[2],180), width=3)
-        draw.rectangle([8,8,w-9,h-9], outline=(c[0],c[1],c[2],80), width=1)
-        bar_h = max(4, int(h*.007))
-        draw.rectangle([0, h-bar_h, w, h], fill=palette.neon_primary)
+        # Çok katmanlı kenar — 3D derinlik hissi
+        draw.rectangle([3,3,w-4,h-4], outline=(c[0],c[1],c[2],200), width=3)
+        draw.rectangle([8,8,w-9,h-9], outline=(c[0],c[1],c[2],100), width=1)
+        draw.rectangle([12,12,w-13,h-13], outline=(c[0],c[1],c[2],40), width=1)
+        # Köşe L-aksanlar (sinematik HUD köşeleri)
+        corner = 45
+        for (ax, ay, dx, dy) in [(0,0,1,1),(w,0,-1,1),(0,h,1,-1),(w,h,-1,-1)]:
+            draw.line([(ax,ay),(ax+dx*corner,ay)], fill=(c[0],c[1],c[2],230), width=4)
+            draw.line([(ax,ay),(ax,ay+dy*corner)], fill=(c[0],c[1],c[2],230), width=4)
+            draw.line([(ax+dx*2,ay+dy*2),(ax+dx*(corner-4),ay+dy*2)],
+                      fill=(min(255,c[0]+80),min(255,c[1]+80),min(255,c[2]+80),120), width=1)
+        # Alt enerji çubuğu
+        bar_h = max(5, int(h * .007))
+        for i in range(bar_h):
+            t = i / bar_h
+            bright = _clamp(c[0] * (0.5 + t * 0.5))
+            draw.line([(0,h-bar_h+i),(w,h-bar_h+i)],
+                      fill=(_clamp(bright), _clamp(c[1]*(0.5+t*0.5)), _clamp(c[2]*(0.5+t*0.5)), 255))
+
+    # --- Sinematik Vignette (köşe karartma) ---
+    def _draw_vignette(self, img: Image.Image, strength: float = 0.75):
+        """Kenarlardan merkeze doğru radyal karartma — sinematik lens efekti."""
+        w, h  = img.size
+        ov    = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        draw  = ImageDraw.Draw(ov, "RGBA")
+        steps = 60
+        for i in range(steps):
+            t  = i / steps
+            # Kenardan merkeze — dışta karanlık, içte şeffaf
+            r  = int(min(w, h) * 0.5 * (1 - t))
+            al = int(255 * strength * (1 - t) ** 1.4)
+            cx, cy = w // 2, h // 2
+            draw.ellipse([cx-r, cy-r, cx+r, cy+r],
+                         fill=(0, 0, 0, 0), outline=(0, 0, 0, al), width=int(min(w,h)*0.008)+1)
+        # Köşe dikdörtgen mask
+        for i in range(25):
+            t  = i / 24
+            al = int(180 * (1 - t) ** 2.5)
+            draw.rectangle([i*3, i*3, w-i*3, h-i*3], outline=(0, 0, 0, al), width=4)
+        img.alpha_composite(ov)
+
+    # --- Film Grain (sinematik gürültü dokusu) ---
+    def _draw_film_grain(self, img: Image.Image, intensity: int = 18, rng: random.Random = None):
+        """Hafif rastgele piksel gürültüsü — film/grain hissi verir."""
+        if rng is None:
+            rng = random.Random()
+        w, h = img.size
+        grain = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        draw  = ImageDraw.Draw(grain, "RGBA")
+        count = int(w * h * 0.012)  # %1.2 piksel
+        for _ in range(count):
+            gx = rng.randint(0, w-1)
+            gy = rng.randint(0, h-1)
+            gv = rng.randint(0, intensity * 2)
+            al = rng.randint(8, intensity)
+            col = _clamp(128 + gv - intensity)
+            draw.point((gx, gy), fill=(col, col, col, al))
+        img.alpha_composite(grain)
+
+    # --- Tarama Çizgileri (CRT monitör efekti, çok hafif) ---
+    def _draw_scanlines(self, draw, w: int, h: int, alpha: int = 12):
+        """Her 3 pikselde bir hafif yatay çizgi — sinematik ekran dokusu."""
+        for y in range(0, h, 3):
+            draw.line([(0, y), (w, y)], fill=(0, 0, 0, alpha))
 
     def render_full(self, channel_name: str, plan: MasterDesignPlan, mode: str,
                     size: Tuple[int,int], output_path: str) -> str:
-        """Tam arka planlı açılış/BRB/banner ekranı üretir (tam opak)."""
+        """Tam arka planlı sinematik açılış ekranı (vignette + grain + scanlines)."""
         rng = random.Random(plan.seed + hash(mode) % 10000)
         w, h = size
 
-        # Tam opak siyah başlangıç — overlay compositing'den alfa sızmasını önler
+        # Tam opak siyah başlangıç
         base = Image.new("RGB", (w, h), (0, 0, 0))
         img  = base.convert("RGBA")
 
         self._draw_background(img, plan, rng)
 
-        # Arka planı tam opaklığa kilitle (smoke_light_leaks alfa sızmasını kapat)
+        # Arka planı opaklığa kilitle
         r_ch, g_ch, b_ch, a_ch = img.split()
         a_ch = a_ch.point(lambda x: 255)
-        img = Image.merge("RGBA", (r_ch, g_ch, b_ch, a_ch))
+        img  = Image.merge("RGBA", (r_ch, g_ch, b_ch, a_ch))
 
+        # Tarama çizgileri (doku katmanı, arka plandan hemen sonra)
+        d_scan = ImageDraw.Draw(img, "RGBA")
+        self._draw_scanlines(d_scan, w, h, alpha=10)
+
+        # Layout render
         layout = plan.traits.layout
         if layout == "center_hero":
             self._layout_center_hero(img, plan, w, h, channel_name, rng, mode)
@@ -728,10 +871,17 @@ class EsportsDesignFactory:
         else:
             self._layout_center_hero(img, plan, w, h, channel_name, rng, mode)
 
+        # Kenar dekorasyonu
         draw3 = ImageDraw.Draw(img, "RGBA")
         self._draw_border_decoration(draw3, w, h, plan.palette, rng)
 
-        # Kaydetmeden önce alfa kanalını tekrar sabitle
+        # Sinematik vignette
+        self._draw_vignette(img, strength=0.65)
+
+        # Film grain
+        self._draw_film_grain(img, intensity=16, rng=rng)
+
+        # Son alfa kilidi
         r_ch, g_ch, b_ch, _ = img.split()
         a_final = Image.new("L", (w, h), 255)
         img = Image.merge("RGBA", (r_ch, g_ch, b_ch, a_final))
@@ -741,9 +891,11 @@ class EsportsDesignFactory:
         return output_path
 
 
+
 # ==============================================================================
 # 8. COMPONENT ESPORTS FACTORY (Bileşen Bazlı Ayrıştırma)
 # ==============================================================================
+
 
 class ComponentEsportsFactory:
     """
@@ -784,178 +936,342 @@ class ComponentEsportsFactory:
         return self._opening.render_full(channel_name, plan, "AZ SONRA DÖNÜYORUM", (1920, 1080), output_path)
 
     # ------------------------------------------------------------------
-    # BILEŞEN 2: Webcam Overlay — ŞEFFAF PNG (sadece köşe bracket)
+    # BILEŞEN 2: Webcam Overlay — ŞEFFAF PNG (Metalik Bevel + Tech Details)
     # ------------------------------------------------------------------
     def generate_webcam_overlay(
         self, channel_name: str, plan: MasterDesignPlan, output_path: str
     ) -> str:
         """
-        640x480 RGBA şeffaf PNG.
-        Merkez tamamen boş — sadece köşelerde metalik/neon L-bracket çerçeveleri.
+        640x480 RGBA şeffaf PNG — CGI-grade metalik bevel L-bracket çerçeve.
+        Merkez alpha=0 (tamamen boş). Köşelerde:
+          - 8 katmanlı hacimsel neon glow
+          - Brushed titanium bevel efekti (highlight + main + shadow)
+          - İç ikinci bracket + devre izi (circuit trace) detayları
+          - Enerji pulse noktaları + tick işaretleri
+          - Köşe chamfer kesim aksanları
         """
         rng = random.Random(plan.seed + 1)
         _prompt = self._refs.build_webcam_prompt(channel_name, plan.palette.name, rng)
 
-        w, h = 640, 480
-        img  = Image.new("RGBA", (w, h), (0, 0, 0, 0))   # TAM ŞEFFAF BAŞLANGIÇ
+        w, h  = 640, 480
+        img   = Image.new("RGBA", (w, h), (0, 0, 0, 0))   # TAM ŞEFFAF
+        p     = plan.palette
+        c     = p.neon_primary
+        c2    = p.neon_secondary
+        arm   = int(min(w, h) * 0.22)
+        thick = 7
+
+        # Yardımcı: Metalik bevel çizgi (3 katman: highlight / main / shadow)
+        def bevel_h(draw, x0, x1, y, w_line):
+            hl = (min(255,c[0]+140), min(255,c[1]+140), min(255,c[2]+140), 220)
+            sh = (_clamp(c[0]-70), _clamp(c[1]-70), _clamp(c[2]-70), 200)
+            ml = (c[0], c[1], c[2], 255)
+            off = max(1, w_line // 3)
+            draw.line([(x0, y-off), (x1, y-off)], fill=hl, width=max(1, off))
+            draw.line([(x0, y), (x1, y)], fill=ml, width=w_line)
+            draw.line([(x0, y+off), (x1, y+off)], fill=sh, width=max(1, off))
+
+        def bevel_v(draw, x, y0, y1, w_line):
+            hl = (min(255,c[0]+140), min(255,c[1]+140), min(255,c[2]+140), 220)
+            sh = (_clamp(c[0]-70), _clamp(c[1]-70), _clamp(c[2]-70), 200)
+            ml = (c[0], c[1], c[2], 255)
+            off = max(1, w_line // 3)
+            draw.line([(x-off, y0), (x-off, y1)], fill=hl, width=max(1, off))
+            draw.line([(x, y0), (x, y1)], fill=ml, width=w_line)
+            draw.line([(x+off, y0), (x+off, y1)], fill=sh, width=max(1, off))
+
+        # Metalik gradyan simülasyonu: çizgi başına parlaklık değişimi
+        def metallic_h(draw, x0, x1, y, w_line, color):
+            for i in range(w_line):
+                t  = i / max(1, w_line - 1)
+                # Merkez parlak, kenarlar karanlık (anisotropic sheen)
+                fac = 1.0 - abs(t - 0.5) * 2
+                rc  = _clamp(color[0] * (0.35 + fac * 0.65) + 255 * fac * 0.25)
+                gc  = _clamp(color[1] * (0.35 + fac * 0.65) + 255 * fac * 0.25)
+                bc  = _clamp(color[2] * (0.35 + fac * 0.65) + 255 * fac * 0.25)
+                draw.line([(x0, y - w_line//2 + i), (x1, y - w_line//2 + i)],
+                          fill=(rc, gc, bc, 240))
+
+        def metallic_v(draw, x, y0, y1, w_line, color):
+            for i in range(w_line):
+                t   = i / max(1, w_line - 1)
+                fac = 1.0 - abs(t - 0.5) * 2
+                rc  = _clamp(color[0] * (0.35 + fac * 0.65) + 255 * fac * 0.25)
+                gc  = _clamp(color[1] * (0.35 + fac * 0.65) + 255 * fac * 0.25)
+                bc  = _clamp(color[2] * (0.35 + fac * 0.65) + 255 * fac * 0.25)
+                draw.line([(x - w_line//2 + i, y0), (x - w_line//2 + i, y1)],
+                          fill=(rc, gc, bc, 240))
+
+        # === KATMAN 1: Hacimsel Neon Glow (8 geçiş, dış-iç) ===
         draw = ImageDraw.Draw(img, "RGBA")
-        p    = plan.palette
-        c    = p.neon_primary
-        c2   = p.neon_secondary
+        for gp in range(8, 0, -1):
+            al = int(45 * (gp / 8) ** 1.5)
+            gw = thick + gp * 5
+            gc = (c[0], c[1], c[2], al)
+            for (x0,y0),(x1,y1) in [
+                ((0,0),(arm,0)), ((0,0),(0,arm)),
+                ((w-arm,0),(w,0)), ((w,0),(w,arm)),
+                ((0,h-arm),(0,h)), ((0,h),(arm,h)),
+                ((w,h-arm),(w,h)), ((w-arm,h),(w,h)),
+            ]:
+                draw.line([(x0,y0),(x1,y1)], fill=gc, width=gw)
 
-        arm   = int(min(w, h) * 0.20)   # L-bracket kol uzunluğu
-        thick = 5                         # Ana çizgi kalınlığı
+        # === KATMAN 2: Metalik Bevel Bracket (brushed titanium sheen) ===
+        for (x0,y0),(x1,y1),(vx,vy0,vy1) in [
+            ((0,0),(arm,0),(0,0,arm)),
+            ((w-arm,0),(w-1,0),(w-1,0,arm)),
+            ((0,h-1),(arm,h-1),(0,h-arm,h-1)),
+            ((w-arm,h-1),(w-1,h-1),(w-1,h-arm,h-1)),
+        ]:
+            metallic_h(draw, x0, x1, y0, thick, c)
+            metallic_v(draw, vx, vy0, vy1, thick, c)
 
-        # --- Neon glow geçişleri (dıştan içe, azalan alfa) ---
-        for gpass in range(5, 0, -1):
-            al  = int(50 * (gpass / 5))
-            gw  = thick + gpass * 4
-            gc  = (c[0], c[1], c[2], al)
+        # === KATMAN 3: Bevel highlight + shadow overlay ===
+        for (x0,y0),(x1,y1),(vx,vy0,vy1) in [
+            ((0,0),(arm,0),(0,0,arm)),
+            ((w-arm,0),(w-1,0),(w-1,0,arm)),
+            ((0,h-1),(arm,h-1),(0,h-arm,h-1)),
+            ((w-arm,h-1),(w-1,h-1),(w-1,h-arm,h-1)),
+        ]:
+            bevel_h(draw, x0, x1, y0, 2)
+            bevel_v(draw, vx, vy0, vy1, 2)
 
-            # Sol-üst
-            draw.line([(0, 0), (arm, 0)],    fill=gc, width=gw)
-            draw.line([(0, 0), (0, arm)],    fill=gc, width=gw)
-            # Sağ-üst
-            draw.line([(w-arm, 0), (w, 0)],  fill=gc, width=gw)
-            draw.line([(w, 0), (w, arm)],    fill=gc, width=gw)
-            # Sol-alt
-            draw.line([(0, h-arm), (0, h)],  fill=gc, width=gw)
-            draw.line([(0, h), (arm, h)],    fill=gc, width=gw)
-            # Sağ-alt
-            draw.line([(w, h-arm), (w, h)],  fill=gc, width=gw)
-            draw.line([(w-arm, h), (w, h)],  fill=gc, width=gw)
+        # === KATMAN 4: İkinci İç Bracket (offset, ince) ===
+        off2  = 14
+        arm2  = int(arm * 0.52)
+        sec_c = (c[0], c[1], c[2], 150)
+        for (x0,y0),(x1,y1) in [
+            ((off2,off2),(off2+arm2,off2)), ((off2,off2),(off2,off2+arm2)),
+            ((w-off2,off2),(w-off2-arm2,off2)), ((w-off2,off2),(w-off2,off2+arm2)),
+            ((off2,h-off2),(off2,h-off2-arm2)), ((off2,h-off2),(off2+arm2,h-off2)),
+            ((w-off2,h-off2),(w-off2,h-off2-arm2)), ((w-off2-arm2,h-off2),(w-off2,h-off2)),
+        ]:
+            draw.line([(x0,y0),(x1,y1)], fill=sec_c, width=2)
 
-        # --- Ana katı L-bracket çizgiler ---
-        solid = (c[0], c[1], c[2], 255)
-        # Sol-üst
-        draw.line([(0, 0), (arm, 0)],    fill=solid, width=thick)
-        draw.line([(0, 0), (0, arm)],    fill=solid, width=thick)
-        # Sağ-üst
-        draw.line([(w-arm, 0), (w-1, 0)], fill=solid, width=thick)
-        draw.line([(w-1, 0), (w-1, arm)], fill=solid, width=thick)
-        # Sol-alt
-        draw.line([(0, h-arm), (0, h-1)], fill=solid, width=thick)
-        draw.line([(0, h-1), (arm, h-1)], fill=solid, width=thick)
-        # Sağ-alt
-        draw.line([(w-1, h-arm), (w-1, h-1)], fill=solid, width=thick)
-        draw.line([(w-arm, h-1), (w-1, h-1)], fill=solid, width=thick)
+        # === KATMAN 5: Devre İzi Detayları (circuit trace) ===
+        trace_c = (c[0], c[1], c[2], 80)
+        trace_arm = int(arm * 0.35)
+        for (ox, oy, is_h) in [
+            (off2+arm2+4, off2, True), (off2, off2+arm2+4, False),
+            (w-off2-arm2-4-trace_arm, off2, True), (w-off2, off2+arm2+4, False),
+            (off2+arm2+4, h-off2, True), (off2, h-off2-arm2-4, False),
+            (w-off2-arm2-4-trace_arm, h-off2, True), (w-off2, h-off2-arm2-4, False),
+        ]:
+            if is_h:
+                draw.line([(ox, oy), (ox+trace_arm, oy)], fill=trace_c, width=1)
+                # Küçük dikey terminal
+                draw.line([(ox+trace_arm, oy-3), (ox+trace_arm, oy+3)], fill=trace_c, width=1)
+            else:
+                draw.line([(ox, oy), (ox, oy+trace_arm)], fill=trace_c, width=1)
+                draw.line([(ox-3, oy+trace_arm), (ox+3, oy+trace_arm)], fill=trace_c, width=1)
 
-        # --- İkinci iç katman (offset) ---
-        off  = 10
-        arm2 = int(arm * 0.55)
-        sec  = (c[0], c[1], c[2], 140)
-        draw.line([(off, off), (off+arm2, off)], fill=sec, width=2)
-        draw.line([(off, off), (off, off+arm2)], fill=sec, width=2)
-        draw.line([(w-off, off), (w-off-arm2, off)], fill=sec, width=2)
-        draw.line([(w-off, off), (w-off, off+arm2)], fill=sec, width=2)
-        draw.line([(off, h-off), (off, h-off-arm2)], fill=sec, width=2)
-        draw.line([(off, h-off), (off+arm2, h-off)], fill=sec, width=2)
-        draw.line([(w-off, h-off), (w-off, h-off-arm2)], fill=sec, width=2)
-        draw.line([(w-off-arm2, h-off), (w-off, h-off)], fill=sec, width=2)
+        # === KATMAN 6: Enerji Pulse Noktaları (köşe eklem noktalari) ===
+        pulse_c  = (min(255,c[0]+80), min(255,c[1]+80), min(255,c[2]+80), 230)
+        pulse_c2 = (c2[0], c2[1], c2[2], 200)
+        for (px, py) in [
+            (0, 0), (arm, 0), (0, arm),                          # Sol-üst
+            (w-1, 0), (w-arm, 0), (w-1, arm),                    # Sağ-üst
+            (0, h-1), (arm, h-1), (0, h-arm),                    # Sol-alt
+            (w-1, h-1), (w-arm, h-1), (w-1, h-arm),              # Sağ-alt
+        ]:
+            col = pulse_c if (px in [0,w-1] and py in [0,h-1]) else pulse_c2
+            draw.ellipse([px-4, py-4, px+4, py+4], fill=col)
+            draw.ellipse([px-2, py-2, px+2, py+2],
+                         fill=(255,255,255,180))  # Specular highlight
 
-        # --- Köşe aksanlar (küçük diyagonal kesim) ---
-        cut = 12
-        cut_c = (c2[0], c2[1], c2[2], 200)
-        for cx_, cy_ in [(arm, 0), (w-arm, 0), (0, arm), (w-1, arm),
-                          (0, h-arm), (w-1, h-arm), (arm, h-1), (w-arm, h-1)]:
-            draw.ellipse([cx_-3, cy_-3, cx_+3, cy_+3], fill=cut_c)
+        # === KATMAN 7: Tick İşaretleri (ölçek göstergesi) ===
+        tick_c = (c[0], c[1], c[2], 110)
+        for t_frac in [0.33, 0.5, 0.67]:
+            tick_pos = int(arm + (min(w,h) - 2*arm) * t_frac)
+            # Üst kenar ticks
+            if tick_pos < w:
+                draw.line([(tick_pos, 0), (tick_pos, 6)], fill=tick_c, width=1)
+            # Sol kenar ticks
+            if tick_pos < h:
+                draw.line([(0, tick_pos), (6, tick_pos)], fill=tick_c, width=1)
 
-        # --- İnce dış çerçeve (tüm kenar) ---
-        border_c = (c[0], c[1], c[2], 80)
-        draw.rectangle([0, 0, w-1, h-1], outline=border_c, width=1)
+        # === KATMAN 8: Dış İnce Çerçeve (tüm kenar) ===
+        draw.rectangle([0, 0, w-1, h-1], outline=(c[0],c[1],c[2],70), width=1)
+        draw.rectangle([2, 2, w-3, h-3], outline=(c[0],c[1],c[2],30), width=1)
 
-        # --- Kanal adı etiketi (üst-orta, küçük) ---
-        badge_h  = 24
-        badge_w  = min(180, w // 3)
-        badge_x  = (w - badge_w) // 2
-        badge_y  = 0
-        badge_c  = (c[0], c[1], c[2], 55)
-        draw.rectangle([badge_x, badge_y, badge_x+badge_w, badge_y+badge_h], fill=badge_c)
-        draw.line([(badge_x, badge_y+badge_h), (badge_x+badge_w, badge_y+badge_h)],
-                  fill=(c[0],c[1],c[2],180), width=2)
-        font_badge = get_system_font("impact.ttf", 13)
+        # === Kanal Adı Rozeti (üst-orta, metalik) ===
+        badge_h = 28
+        badge_w = min(200, w // 3 + 20)
+        badge_x = (w - badge_w) // 2
+        # Parallelogram şekilli rozet
+        bevel_pts = [
+            (badge_x + 8, 0), (badge_x + badge_w - 8, 0),
+            (badge_x + badge_w, badge_h), (badge_x, badge_h)
+        ]
+        draw.polygon(bevel_pts, fill=(c[0],c[1],c[2],60))
+        draw.polygon(bevel_pts, outline=(c[0],c[1],c[2],190))
+        # Metalik highlight çizgisi rozetin üstünde
+        draw.line([(badge_x+8, 1), (badge_x+badge_w-8, 1)],
+                  fill=(min(255,c[0]+150),min(255,c[1]+150),min(255,c[2]+150),160), width=1)
+        font_badge = get_system_font("impact.ttf", 14)
         name_short = channel_name[:16].upper()
-        draw.text((w//2, badge_y + badge_h//2), name_short, font=font_badge,
-                  fill=(255, 255, 255, 220), anchor="mm")
+        draw.text((w//2, badge_h//2), name_short, font=font_badge,
+                  fill=(255,255,255,230), anchor="mm")
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         img.save(output_path, "PNG")
         return output_path
 
     # ------------------------------------------------------------------
-    # BILEŞEN 3: Chat Overlay — ŞEFFAF PNG (sadece kenar çerçeve + header)
+    # BILEŞEN 3: Chat Overlay — ŞEFFAF PNG (Metalik Gradient Border + 3D Header)
     # ------------------------------------------------------------------
     def generate_chat_overlay(
         self, channel_name: str, plan: MasterDesignPlan, output_path: str
     ) -> str:
         """
-        420x600 RGBA şeffaf PNG.
-        Merkez tamamen boş — sadece neon kenarlık + üst header bar.
+        420x600 RGBA şeffaf PNG — CGI-grade metalik çerçeve + 3D header bar.
+        Merkez alpha=0. Kenarlar:
+          - 6 katmanlı hacimsel neon glow border
+          - Metalik gradient bevel (highlight/main/shadow her kenarda)
+          - LED strip simülasyonu (küçük nokta serileri)
+          - 3D chamfered köşe aksanları
+          - Volumetric header bar + parallelogram aksanlar
+          - Yan panel devre izleri
         """
         rng = random.Random(plan.seed + 2)
         _prompt = self._refs.build_chat_prompt(channel_name, plan.palette.name, rng)
 
         w, h  = 420, 600
-        img   = Image.new("RGBA", (w, h), (0, 0, 0, 0))   # TAM ŞEFFAF BAŞLANGIÇ
-        draw  = ImageDraw.Draw(img, "RGBA")
+        img   = Image.new("RGBA", (w, h), (0, 0, 0, 0))   # TAM ŞEFFAF
         p     = plan.palette
         c     = p.neon_primary
         c2    = p.neon_secondary
-
-        bw = 3   # border width
-
-        # --- Neon dış glow (3 geçiş) ---
-        for gpass in range(4, 0, -1):
-            al = int(35 * (gpass / 4))
-            gw = bw + gpass * 3
-            gv = (c[0], c[1], c[2], al)
-            draw.rectangle([0, 0, w-1, h-1], outline=gv, width=gw)
-
-        # --- Ana dış kenar ---
-        draw.rectangle([0, 0, w-1, h-1], outline=(c[0],c[1],c[2],230), width=bw)
-        # --- İç ikinci kenar ---
-        draw.rectangle([bw+3, bw+3, w-bw-4, h-bw-4], outline=(c[0],c[1],c[2],90), width=1)
-
-        # --- Üst header bar (yarı şeffaf) ---
-        header_h = 40
-        header_ov = Image.new("RGBA", (w, header_h), (0,0,0,0))
-        hd = ImageDraw.Draw(header_ov, "RGBA")
-        hd.rectangle([0, 0, w, header_h], fill=(c[0],c[1],c[2],55))
-        # Header kenarları
-        hd.rectangle([0, 0, w-1, header_h-1], outline=(c[0],c[1],c[2],160), width=bw)
-        img.alpha_composite(header_ov)
+        bw    = 4
 
         draw = ImageDraw.Draw(img, "RGBA")
-        # Header alt çizgisi (daha belirgin)
-        draw.line([(0, header_h), (w, header_h)], fill=(c[0],c[1],c[2],200), width=2)
 
-        # Parallelogram aksanı header'da
-        pts_left  = [(0,0),(30,0),(20,header_h),(0,header_h)]
-        pts_right = [(w,0),(w-30,0),(w-20,header_h),(w,header_h)]
-        draw.polygon(pts_left,  fill=(c[0],c[1],c[2],40))
-        draw.polygon(pts_right, fill=(c[0],c[1],c[2],40))
+        # === KATMAN 1: Hacimsel Neon Glow Border (6 geçiş) ===
+        for gp in range(6, 0, -1):
+            al = int(40 * (gp / 6) ** 1.6)
+            gw = bw + gp * 4
+            draw.rectangle([0, 0, w-1, h-1], outline=(c[0],c[1],c[2],al), width=gw)
 
-        # Header yazısı
-        font_h = get_system_font("impact.ttf", 16)
-        draw.text((w//2, header_h//2), "💬  SOHBET", font=font_h,
-                  fill=(255,255,255,230), anchor="mm")
+        # === KATMAN 2: Metalik Gradient Border (her kenar ayrı şerit) ===
+        border_strips = bw + 2
+        for i in range(border_strips):
+            t   = i / max(1, border_strips - 1)
+            # Anisotropic sheen: orta parlak, kenarlar karanlık
+            fac = 1.0 - abs(t - 0.5) * 2
+            rc  = _clamp(c[0] * (0.3 + fac * 0.7) + 255 * fac * 0.25)
+            gc  = _clamp(c[1] * (0.3 + fac * 0.7) + 255 * fac * 0.25)
+            bc  = _clamp(c[2] * (0.3 + fac * 0.7) + 255 * fac * 0.25)
+            col = (rc, gc, bc, 230)
+            # Sol kenar
+            draw.line([(i, 0), (i, h)], fill=col)
+            # Sağ kenar
+            draw.line([(w-1-i, 0), (w-1-i, h)], fill=col)
+            # Üst kenar
+            draw.line([(0, i), (w, i)], fill=col)
+            # Alt kenar
+            draw.line([(0, h-1-i), (w, h-1-i)], fill=col)
 
-        # --- Alt aksanlar (iki küçük çizgi) ---
-        draw.line([(10, h-8),(w-10, h-8)], fill=(c2[0],c2[1],c2[2],120), width=1)
-        draw.line([(20, h-4),(w-20, h-4)], fill=(c[0],c[1],c[2],80), width=1)
+        # === KATMAN 3: İç İnce Kenar ===
+        inner = bw + 5
+        draw.rectangle([inner, inner, w-inner-1, h-inner-1],
+                       outline=(c[0],c[1],c[2],90), width=1)
+        draw.rectangle([inner+3, inner+3, w-inner-4, h-inner-4],
+                       outline=(c[0],c[1],c[2],40), width=1)
 
-        # --- Köşe dekorasyon küçük kareler ---
-        sq = 6
-        sq_c = (c2[0],c2[1],c2[2],200)
-        for cx_, cy_ in [(bw,header_h+bw),(w-bw-sq,header_h+bw),
-                          (bw,h-bw-sq),(w-bw-sq,h-bw-sq)]:
-            draw.rectangle([cx_, cy_, cx_+sq, cy_+sq], fill=sq_c)
+        # === KATMAN 4: Chamfered Köşe Aksanları ===
+        chamf = 16
+        ch_c  = (c2[0], c2[1], c2[2], 210)
+        ch_hl = (min(255,c2[0]+120), min(255,c2[1]+120), min(255,c2[2]+120), 180)
+        for (cx_, cy_, dx, dy) in [(0,0,1,1),(w,0,-1,1),(0,h,1,-1),(w,h,-1,-1)]:
+            # Diagonal chamfer çizgisi
+            draw.line([(cx_+dx*chamf, cy_), (cx_, cy_+dy*chamf)], fill=ch_c, width=2)
+            # Highlight
+            draw.line([(cx_+dx*(chamf-2), cy_+dy), (cx_+dx, cy_+dy*(chamf-2))],
+                      fill=ch_hl, width=1)
+            # Köşe nokta (specular)
+            draw.ellipse([cx_+dx*2-4, cy_+dy*2-4, cx_+dx*2+4, cy_+dy*2+4],
+                         fill=(min(255,c[0]+100),min(255,c[1]+100),min(255,c[2]+100),220))
 
-        # --- İki yan dikey vurgu çizgisi ---
-        draw.line([(bw+8, header_h+8),(bw+8, h-8)],
-                  fill=(c[0],c[1],c[2],40), width=1)
-        draw.line([(w-bw-9, header_h+8),(w-bw-9, h-8)],
-                  fill=(c[0],c[1],c[2],40), width=1)
+        # === KATMAN 5: LED Strip Simülasyonu (yatay noktalar üst+alt) ===
+        led_r = 2
+        led_gap = 12
+        for lx in range(chamf + 8, w - chamf - 8, led_gap):
+            # Üst LED strip
+            brightness = rng.randint(140, 255)
+            led_c = (min(255,c[0]), min(255,c[1]), min(255,c[2]), brightness)
+            draw.ellipse([lx-led_r, bw+1, lx+led_r, bw+1+led_r*2], fill=led_c)
+            # Alt LED strip
+            draw.ellipse([lx-led_r, h-bw-3-led_r*2, lx+led_r, h-bw-3], fill=led_c)
+
+        # === KATMAN 6: Metalik Header Bar ===
+        header_h = 44
+        header_ov = Image.new("RGBA", (w, header_h), (0,0,0,0))
+        hd = ImageDraw.Draw(header_ov, "RGBA")
+
+        # Gradient fill header (koyu → parlak → koyu)
+        for hy in range(header_h):
+            t   = hy / header_h
+            fac = 1.0 - abs(t - 0.45) * 2.2
+            fac = max(0, min(1, fac))
+            al  = int(80 + fac * 80)
+            hrc = _clamp(c[0] * (0.4 + fac * 0.5) + 255 * fac * 0.1)
+            hgc = _clamp(c[1] * (0.4 + fac * 0.5) + 255 * fac * 0.1)
+            hbc = _clamp(c[2] * (0.4 + fac * 0.5) + 255 * fac * 0.1)
+            hd.line([(0, hy), (w, hy)], fill=(hrc, hgc, hbc, al))
+
+        # Header parallelogram aksanları
+        pts_L = [(0,0),(40,0),(28,header_h),(0,header_h)]
+        pts_R = [(w,0),(w-40,0),(w-28,header_h),(w,header_h)]
+        hd.polygon(pts_L, fill=(c[0],c[1],c[2],50))
+        hd.polygon(pts_R, fill=(c[0],c[1],c[2],50))
+
+        # Header alt border (neon çizgisi)
+        hd.line([(0, header_h-1),(w, header_h-1)], fill=(c[0],c[1],c[2],220), width=2)
+        # Header üst highlight
+        hd.line([(chamf, 0),(w-chamf, 0)],
+                fill=(min(255,c[0]+160),min(255,c[1]+160),min(255,c[2]+160),150), width=1)
+
+        img.alpha_composite(header_ov)
+        draw = ImageDraw.Draw(img, "RGBA")
+
+        # Header separator glow
+        for gy in range(3):
+            al_g = int(100 * (1 - gy / 3))
+            draw.line([(0, header_h+gy),(w, header_h+gy)], fill=(c[0],c[1],c[2],al_g))
+
+        # Header icon + yazı
+        font_title = get_system_font("impact.ttf", 18)
+        font_sub   = get_system_font("arialbd.ttf", 9)
+        draw.text((w//2, header_h//2 - 2), "SOHBET", font=font_title,
+                  fill=(255,255,255,240), anchor="mm")
+        # Küçük sub text
+        draw.text((w//2, header_h - 8), channel_name[:20].upper(), font=font_sub,
+                  fill=(c[0],c[1],c[2],160), anchor="mm")
+
+        # === KATMAN 7: Yan Panel Devre İzleri ===
+        panel_y_start = header_h + 12
+        panel_y_end   = h - 12
+        trace_len     = 30
+        trace_c2      = (c[0], c[1], c[2], 55)
+        for ty in range(panel_y_start, panel_y_end, 45):
+            # Sol yan devre izi
+            draw.line([(inner+2, ty),(inner+2+trace_len, ty)], fill=trace_c2, width=1)
+            draw.line([(inner+2+trace_len, ty),(inner+2+trace_len, ty+12)], fill=trace_c2, width=1)
+            # Sağ yan devre izi (simetrik)
+            draw.line([(w-inner-3, ty),(w-inner-3-trace_len, ty)], fill=trace_c2, width=1)
+            draw.line([(w-inner-3-trace_len, ty),(w-inner-3-trace_len, ty+12)], fill=trace_c2, width=1)
+
+        # === Alt Footer Aksanı ===
+        footer_h = 18
+        footer_ov = Image.new("RGBA", (w, footer_h), (0,0,0,0))
+        fd = ImageDraw.Draw(footer_ov, "RGBA")
+        for fy in range(footer_h):
+            t   = 1.0 - fy / footer_h
+            al  = int(t * 60)
+            fd.line([(0,fy),(w,fy)], fill=(c[0],c[1],c[2],al))
+        fd.line([(chamf, 0),(w-chamf, 0)], fill=(c[0],c[1],c[2],160), width=2)
+        fd.line([(chamf+8, 3),(w-chamf-8, 3)], fill=(c[0],c[1],c[2],70), width=1)
+        # Footer'ı alt kenara yapıştır
+        img.alpha_composite(footer_ov, dest=(0, h-footer_h))
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         img.save(output_path, "PNG")
