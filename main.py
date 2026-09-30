@@ -71,7 +71,7 @@ class RipleytiaOBSApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Ripleytia OBS AI Studio v1.6.1 (CGI Render: Metalik Bevel Bracket + Vignette + Film Grain + SD-Weight Prompts) - Profesyonel Yapay Zeka Destekli Sahne & Yayın Stüdyosu")
+        self.title("Ripleytia OBS AI Studio v1.7.0 (CGI Render: Metalik Bevel Bracket + Vignette + Film Grain + SD-Weight Prompts) - Profesyonel Yapay Zeka Destekli Sahne & Yayın Stüdyosu")
         self.geometry("1200x860")
         self.minsize(1080, 740)
         self.configure(fg_color=THEME["bg_main"])
@@ -129,7 +129,7 @@ class RipleytiaOBSApp(ctk.CTk):
         self.tab_manual = self.tabview.add("🛠️ Manuel Gelişmiş Stüdyo")
         self.tab_media = self.tabview.add("🖼️ Medya & Varlık Kütüphanesi")
         self.tab_audio = self.tabview.add("🎙️ Ses & AI Gürültü Engelleme")
-        self.tab_about = self.tabview.add("ℹ️ Rehber & Yenilikler (v1.6.1)")
+        self.tab_about = self.tabview.add("ℹ️ Rehber & Yenilikler (v1.7.0)")
 
         # Sekme Yapıcıları
         self._build_ai_scenes_tab()
@@ -148,7 +148,7 @@ class RipleytiaOBSApp(ctk.CTk):
 
         self.status_label = ctk.CTkLabel(
             self.status_bar,
-            text="✨ Ripleytia OBS AI Studio v1.6.1 Hazır • Şeffaf Webcam/Chat Overlay + UE5 Render Kalitesi + ReferenceSearchEngine",
+            text="✨ Ripleytia OBS AI Studio v1.7.0 Hazır • Şeffaf Webcam/Chat Overlay + UE5 Render Kalitesi + ReferenceSearchEngine",
             font=("Segoe UI", 11),
             text_color=THEME["text_muted"]
         )
@@ -156,7 +156,7 @@ class RipleytiaOBSApp(ctk.CTk):
 
         self.ver_label = ctk.CTkLabel(
             self.status_bar,
-            text="v1.6.1 (Güncel Versiyon) • %100 PC Check & Whitelist Uyumlu",
+            text="v1.7.0 (Güncel Versiyon) • %100 PC Check & Whitelist Uyumlu",
             font=("Segoe UI", 11, "bold"),
             text_color=THEME["accent_hover"]
         )
