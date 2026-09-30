@@ -1,4 +1,4 @@
-# 🎥 Ripleytia OBS AI Studio (v1.5.1 Güncel Versiyon)
+# 🎥 Ripleytia OBS AI Studio (v1.6.0 Güncel Versiyon)
 
 <p align="center">
   <img src="assets/logo.png" width="160" alt="Ripleytia Logo" />
@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Canlı Yayıncılar ve Rekabetçi Espor Oyuncuları İçin Yapay Zeka Destekli OBS Studio & Sahne/Overlay Stüdyosu</b><br>
-  <i>EsportsDesignFactory • Grunge Doku Katmanları • 3D Extruded Tipografi • Neon Volumetric Aura • Donma Hatası Düzeltmesi</i>
+  <i>ComponentEsportsFactory • Şeffaf Webcam/Chat Overlay • UE5 Render Kalitesi • ReferenceSearchEngine</i>
 </p>
 
 <p align="center">
@@ -14,99 +14,88 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-blueviolet?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/UI-CustomTkinter-blueviolet?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Anti--Cheat-100%25%20Uyumlu%20(Safe)-brightgreen?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Sürüm-v1.5.1%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Sürüm-v1.6.0%20(Güncel%20Versiyon)-purple?style=for-the-badge" />
 </p>
 
 ---
 
 ## 📖 Genel Bakış
 
-**Ripleytia OBS AI Studio (v1.5.0)**, bu sürümde tamamen yeniden yazılmış **EsportsDesignFactory** grafik motoruyla geliyor. Syhd3, WTCN ve VCT turnuva paketlerinin ayırt edici özelliklerini — gerçek doku katmanları, 3D extruded metin gölgeleri, neon volumetric bloom aura ve yapısal anti-repetition — saf Python/Pillow ile üretiyor.
+**Ripleytia OBS AI Studio (v1.6.0)**, grafik motorunu **Bileşen Bazlı Ayrıştırma** (Component-Based Separation) mimarisine taşıdı. Artık her overlay türü kendi bağımsız kanalından üretiliyor:
 
-Her "Oluştur" tuşuna basıldığında, motor aynı şablonu modifiye etmez; **DesignHistoryManager** son 10 tasarımı takip eder ve %50'den fazla yapısal benzerlik tespit ederse tasarımı reddederek tamamen farklı bir kombinasyon seçer.
+- **Açılış Ekranı:** Tam arka planlı, 3D sinematik, alpha=255 opak
+- **Webcam Çerçevesi:** Merkezi tamamen boş/şeffaf, yalnızca köşe L-bracket neon çerçeveleri
+- **Chat Kutusu:** Merkezi tamamen boş/şeffaf, yalnızca kenar çerçeve + başlık barı
 
 ---
 
-## 🚀 Sürüm 1.5.0 ile Gelen Profesyonel Yenilikler
+## 🚀 Sürüm 1.6.0 ile Gelen Profesyonel Yenilikler
 
-### 1. 🏭 EsportsDesignFactory — Tamamen Yeni Grafik Motoru
+### 1. 🏭 ComponentEsportsFactory — Bileşen Bazlı Ayrıştırma
 
-Eski şablon tabanlı motor kaldırıldı. Yerini **5 bağımsız yapısal trait** üzerine kurulu fabrika mimarisi aldı:
+| Bileşen | Boyut | Şeffaflık | Açıklama |
+|---|---|---|---|
+| `generate_opening_screen()` | 1920×1080 | ❌ Tam Opak | 3D sinematik açılış + BRB |
+| `generate_webcam_overlay()` | 640×480 | ✅ Şeffaf (alpha=0) | Sadece köşe L-bracket çerçeveleri |
+| `generate_chat_overlay()` | 420×600 | ✅ Şeffaf (alpha=0) | Sadece kenar + header barı |
+| `generate_event_ticker()` | 1920×120 | Yarı Şeffaf | 3 segmentli etkinlik şeridi |
 
-| Trait | Havuz (Seçenekler) |
-|---|---|
-| **texture_type** | heavy_grunge_scratch, dark_brushed_metal, carbon_fiber_weave, distressed_concrete, smoke_light_leaks |
-| **emblem_shape** | hexagon, shield, slash_strips, diamond_cut, sector_wedge, chamfer_rect |
-| **typo_style** | 3d_extrude_heavy, outline_glow, italic_slash_impact, brutalist_block, hud_mono_neon |
-| **aura_family** | crimson_red, cyber_cyan, electric_gold, void_purple, acid_green |
-| **layout** | center_hero, left_wedge, bottom_ribbon, full_bleed_hud, asymmetric_tilt |
+### 2. 🎮 Webcam Overlay — Gerçek Şeffaf PNG
+- Başlangıç: `Image.new("RGBA", size, (0,0,0,0))` → tam şeffaf tuval
+- Yalnızca 5 geçişli neon glow L-bracket çizgileri (köşelerde)
+- Merkez: **alpha=0** (tamamen boş) — OBS'de kamerın görünür
+- İç ikinci bracket katmanı, köşe aksanları ve ince dış çerçeve
+- Üst orta: Kanal adı rozet etiketi (semi-transparent)
 
-### 2. 🎨 Grunge Doku Arka Planlar (Procedural Texture)
-Artık düz gradyan yok! Her arka plan gerçek bir doku katmanıyla başlar:
-* **heavy_grunge_scratch:** 400 adet rastgele çizgi, farklı alfa/kalınlık/eğim kombinasyonlarıyla
-* **dark_brushed_metal:** 500 yatay + 120 diyagonal ışık sıyırması
-* **carbon_fiber_weave:** 12px tile dokuma, parlak/koyu değişimli karbon kafes
-* **distressed_concrete:** 800 rastgele nokta + beton çatlak çizgileri
-* **smoke_light_leaks:** 6 adet neon bloom dairesi, gerçek ışık sızıntısı efekti
+### 3. 💬 Chat Overlay — Gerçek Şeffaf PNG
+- Başlangıç: `Image.new("RGBA", size, (0,0,0,0))` → tam şeffaf tuval
+- 3 geçişli neon glow dış kenar
+- Semi-transparent header bar (sadece üst kısım, %55 opaklık)
+- Parallelogram aksanları, köşe kareler, yan vurgu çizgileri
+- Merkez: **alpha=0** (tamamen boş) — Twitch/Kick chat'i görünür
 
-### 3. ✍️ 3D Extruded Tipografi
-Metinler artık 12 katmanlı derinlik gölgesiyle çiziliyor:
-* 12→1 arası ofsetlerde degrade extrude geçişi (koyu → parlak)
-* 3px kalınlığında dış stroke ring (neon renkte)
-* En üstte saf face yazı katmanı
+### 4. 🔍 ReferenceSearchEngine — İnternet Referans Havuzu
+Her bileşen için farklı kuratlı keyword havuzu (15+ kaynak her kategori):
+- **Opening:** `"Valorant Champions VCT Stage Style"`, `"Riot Games Official HUD Layout"`...
+- **Webcam:** `"Esports Webcam Overlay Transparent Border 3D hexagon"`, `"L-bracket corner cam frame neon"`...
+- **Chat:** `"Twitch Transparent Chat Box Frame Stream Element 3D"`, `"StreamElements chat overlay transparent alpha"`...
 
-### 4. 💥 Neon Volumetric Bloom Aura
-Her emblem/logo arkasında gerçek neon parlama:
-* 22 adımlı konsantrik ellipse (en dıştan içe doğru opaklık artışı)
-* Aura rengi traits'ten (crimson_red, cyber_cyan, vb.) otomatik belirlenir
-* RGBA composite ile diğer katmanlarla gerçekçi karışım
+### 5. 🎨 UE5 / Octane Render Kalite Enjeksiyonu
+Her prompt'a otomatik eklenen kalite prefix'i:
+> *"Genuine 3D render, Unreal Engine 5 render style, Blender 3D modeling, Octane Render, ray-traced ambient occlusion, metallic beveling, volumetric glass reflection, emissive neon hardware, hyper-realistic gaming peripheral texture, subsurface scattering, physically-based rendering PBR, photorealistic esports aesthetic."*
 
-### 5. 🔷 6 Emblem Şekli
-`hexagon`, `shield`, `slash_strips`, `diamond_cut`, `sector_wedge`, `chamfer_rect` — her basışta rastgele seçilir, iç/dış renk ayrımı ile çizilir
-
-### 6. 🗺️ 5 Tam Farklı Kompozisyon Düzeni
-* **center_hero:** Ortada büyük emblem + bloom + 3D başlık
-* **left_wedge:** Sol açılı panel, sağda büyük tipografi
-* **bottom_ribbon:** Üstte emblem, altta agresif şerit bilgi barı
-* **full_bleed_hud:** HUD köşe bracketi grid, mono font tipografi
-* **asymmetric_tilt:** Diyagonal slash bölücü, iki bölgeli asimetrik yerleşim
-
-### 7. 🧬 DesignHistoryManager (%50 Benzerlik Eşiği)
-* Son 10 tasarım 5 trait üzerinden kıyaslanır
-* Benzerlik ≥ %50 → otomatik reject + re-mutate (max 20 deneme)
+### 6. 🔒 Opening Ekranı Alpha Garantisi
+`render_full()` artık iki kez alfa kanalını `255`'e kilitleyor:
+- Doku katmanı çiziminden önce
+- PNG kaydedilmeden önce
+`smoke_light_leaks` gibi alfa kullanan dokular artık açılış ekranını yarı-şeffaf bırakamaz.
 
 ---
 
 ## 🔐 Güvenlik & Dosya Doğrulama
 
-Uygulama açık kaynak kodludur, hiçbir reklam veya arka plan zararlısı içermez. Windows Defender tarafından taranmış ve 0 tehdit onaylanmıştır.
-
 * **Dosya Adı:** `Ripleytia OBS AI Studio.exe`
-* **SHA-256 Özeti:**
+* **SHA-256:**
   ```text
-  b4de135b1ea272946d1d69c3000f0e4371d80cc62fef6c553412dd8e8c57250a
+  c34d0adc2567bd4944c25c52466d8e246965384e6501726d512b0626e94676d1
   ```
-* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/b4de135b1ea272946d1d69c3000f0e4371d80cc62fef6c553412dd8e8c57250a)
+* **VirusTotal Raporu:** [VirusTotal Doğrulama Bağlantısı](https://www.virustotal.com/gui/file/c34d0adc2567bd4944c25c52466d8e246965384e6501726d512b0626e94676d1)
+* **Windows Defender:** 0 Tehdit ✅
 
 ---
 
 ## 🚀 Kurulum ve Çalıştırma
 
 ### Yöntem 1: Hazır `.exe` İle Çalıştırma (Önerilen)
-1. [Releases](../../releases) bölümünden **`Ripleytia.OBS.AI.Studio.exe`** veya **`Ripleytia.OBS.AI.Studio.zip`** dosyasını indirin.
+1. [Releases](../../releases) bölümünden **`Ripleytia.OBS.AI.Studio.exe`** dosyasını indirin.
 2. Dosyayı çalıştırın.
-3. Donanım ve hız testinizi yapın, dilediğiniz profili veya sahne paketini tek tıkla OBS'e ekleyin!
+3. AI Sahne & Overlay Stüdyosu sekmesinden kanal adınızı girin ve oluştur!
 
 ### Yöntem 2: Kaynak Koddan Çalıştırma
 ```powershell
-# Depoyu klonlayın
 git clone https://github.com/ripleytia/ripleytia-obs-studio.git
 cd ripleytia-obs-studio
-
-# Bağımlılıkları yükleyin
 pip install customtkinter pillow requests
-
-# Uygulamayı başlatın
 python main.py
 ```
 
@@ -122,21 +111,20 @@ python build_exe.py
 ```text
 ripleytia-obs-studio/
 ├── assets/
-│   ├── icon.ico            # Windows .ico simgesi (16x16 - 256x256)
-│   ├── logo.png            # 512x512 yüksek çözünürlüklü R logosu
+│   ├── icon.ico            # Windows .ico simgesi
+│   ├── logo.png            # 512x512 yüksek çözünürlüklü logo
 │   ├── logo_64.png         # Başlık çubuğu için 64x64 logo
-│   └── bg_dark.png         # Düşük opaklıklı gothic mor arka plan
+│   └── bg_dark.png         # Gothic mor arka plan
 ├── engine/
 │   ├── hardware.py         # Donanım, encoder ve OBS tespit motoru
 │   ├── speedtest.py        # Cloudflare CDN canlı hız testi motoru
 │   ├── obs_engine.py       # OBS profil, sahne, replay buffer ve ses motoru
-│   ├── ai_designer.py      # EsportsDesignFactory v1.5.0 — Grunge+3D+Neon
-│   └── performance_monitor.py # 0 ms gecikmeli CPU, RAM & OBS süreç monitörü
-├── main.py                 # CustomTkinter 8 sekmeli modern grafik arayüzü
+│   ├── ai_designer.py      # ComponentEsportsFactory v1.6.0
+│   └── performance_monitor.py # CPU, RAM & OBS süreç monitörü
+├── main.py                 # CustomTkinter 8 sekmeli arayüz
 ├── build_exe.py            # PyInstaller derleme betiği
-├── version_info.txt        # Windows PE binary sürüm bilgisi (v1.5.0)
-├── .gitignore              # Git yoksayma kuralları
-└── README.md               # Detaylı dokümantasyon
+├── version_info.txt        # Windows PE binary sürüm bilgisi (v1.6.0)
+└── README.md               # Dokümantasyon
 ```
 
 ---
@@ -145,4 +133,4 @@ ripleytia-obs-studio/
 
 * **Geliştirici:** Ripleytia
 * **Lisans:** [MIT License](LICENSE)
-* **Destek & Geri Bildirim:** Her türlü öneri veya hata bildirimi için [Issues](../../issues) bölümünü kullanabilirsiniz.
+* **Destek & Geri Bildirim:** [Issues](../../issues)
